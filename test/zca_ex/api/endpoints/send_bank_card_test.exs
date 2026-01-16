@@ -11,7 +11,7 @@ defmodule ZcaEx.Api.Endpoints.SendBankCardTest do
       uid: "123456",
       secret_key: @secret_key,
       zpw_service_map: %{
-        "chat" => ["https://chat.zalo.me"]
+        "zimsg" => ["https://zimsg.zalo.me"]
       },
       api_type: 30,
       api_version: 645
@@ -74,9 +74,9 @@ defmodule ZcaEx.Api.Endpoints.SendBankCardTest do
 
   describe "build_url/2" do
     test "builds correct URL", %{session: session} do
-      url = SendBankCard.build_url("https://chat.zalo.me", session)
+      url = SendBankCard.build_url("https://zimsg.zalo.me", session)
 
-      assert url =~ "https://chat.zalo.me/api/transfer/card"
+      assert url =~ "https://zimsg.zalo.me/api/transfer/card"
       assert url =~ "zpw_ver=645"
       assert url =~ "zpw_type=30"
     end
@@ -152,7 +152,31 @@ defmodule ZcaEx.Api.Endpoints.SendBankCardTest do
       result = SendBankCard.send(session_no_service, credentials, "thread123", :user, bin_bank, "123456789")
 
       assert {:error, error} = result
-      assert error.message =~ "chat service URL not found"
+      assert error.message =~ "zimsg service URL not found"
+      assert error.code == :service_not_found
+    end
+
+    test "returns error for non-string name_acc_bank in opts", %{session: session, credentials: credentials, bin_bank: bin_bank} do
+      result = SendBankCard.send(session, credentials, "thread123", :user, bin_bank, "123456789", name_acc_bank: 12345)
+
+      assert {:error, error} = result
+      assert error.message == "name_acc_bank must be nil or a string"
+      assert error.code == :invalid_input
+    end
+
+    test "accepts nil name_acc_bank in opts", %{session: session, credentials: credentials, bin_bank: bin_bank} do
+      session_no_service = %{session | zpw_service_map: %{}}
+      result = SendBankCard.send(session_no_service, credentials, "thread123", :user, bin_bank, "123456789", name_acc_bank: nil)
+
+      assert {:error, error} = result
+      assert error.code == :service_not_found
+    end
+
+    test "accepts string name_acc_bank in opts", %{session: session, credentials: credentials, bin_bank: bin_bank} do
+      session_no_service = %{session | zpw_service_map: %{}}
+      result = SendBankCard.send(session_no_service, credentials, "thread123", :user, bin_bank, "123456789", name_acc_bank: "Test Name")
+
+      assert {:error, error} = result
       assert error.code == :service_not_found
     end
   end

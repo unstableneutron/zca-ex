@@ -35,12 +35,14 @@ defmodule ZcaEx.Api.Endpoints.SendBankCard do
   @spec send(Session.t(), Credentials.t(), String.t(), thread_type(), bin_bank(), String.t(), keyword()) ::
           {:ok, :success} | {:error, Error.t()}
   def send(session, credentials, thread_id, thread_type, bin_bank, num_acc_bank, opts \\ []) do
+    name_acc_bank = Keyword.get(opts, :name_acc_bank, "---")
+
     with :ok <- validate_thread_id(thread_id),
          :ok <- validate_thread_type(thread_type),
          :ok <- validate_bin_bank(bin_bank),
          :ok <- validate_num_acc_bank(num_acc_bank),
+         :ok <- validate_name_acc_bank(name_acc_bank),
          {:ok, service_url} <- get_service_url(session) do
-      name_acc_bank = Keyword.get(opts, :name_acc_bank, "---")
       now = System.system_time(:millisecond)
 
       params = build_params(bin_bank, num_acc_bank, name_acc_bank, thread_id, thread_type, now)
@@ -85,6 +87,10 @@ defmodule ZcaEx.Api.Endpoints.SendBankCard do
   defp validate_num_acc_bank(<<>>), do: {:error, Error.new(:api, "num_acc_bank cannot be empty", code: :invalid_input)}
   defp validate_num_acc_bank(_), do: {:error, Error.new(:api, "num_acc_bank must be a string", code: :invalid_input)}
 
+  defp validate_name_acc_bank(nil), do: :ok
+  defp validate_name_acc_bank(name) when is_binary(name), do: :ok
+  defp validate_name_acc_bank(_), do: {:error, Error.new(:api, "name_acc_bank must be nil or a string", code: :invalid_input)}
+
   @doc false
   def build_params(bin_bank, num_acc_bank, name_acc_bank, thread_id, thread_type, now) do
     dest_type = if thread_type == :group, do: 1, else: 0
@@ -108,10 +114,10 @@ defmodule ZcaEx.Api.Endpoints.SendBankCard do
   end
 
   defp get_service_url(session) do
-    case get_in(session.zpw_service_map, ["chat"]) do
+    case get_in(session.zpw_service_map, ["zimsg"]) do
       [url | _] when is_binary(url) -> {:ok, url}
       url when is_binary(url) -> {:ok, url}
-      _ -> {:error, Error.new(:api, "chat service URL not found", code: :service_not_found)}
+      _ -> {:error, Error.new(:api, "zimsg service URL not found", code: :service_not_found)}
     end
   end
 end

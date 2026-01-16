@@ -86,8 +86,16 @@ defmodule ZcaEx.Api.Endpoints.UpdateProductCatalog do
   defp validate_create_time(create_time) when is_integer(create_time) and create_time > 0, do: :ok
   defp validate_create_time(_), do: {:error, Error.new(:api, "create_time must be a positive integer", code: :invalid_input)}
 
-  defp validate_product_photos(photos) when is_list(photos) and length(photos) <= @max_photos, do: :ok
-  defp validate_product_photos(photos) when is_list(photos), do: {:error, Error.new(:api, "product_photos must have at most #{@max_photos} items", code: :invalid_input)}
+  defp validate_product_photos(photos) when is_list(photos) do
+    cond do
+      length(photos) > @max_photos ->
+        {:error, Error.new(:api, "product_photos must have at most #{@max_photos} items", code: :invalid_input)}
+      not Enum.all?(photos, &is_binary/1) ->
+        {:error, Error.new(:api, "product_photos must contain only strings", code: :invalid_input)}
+      true ->
+        :ok
+    end
+  end
   defp validate_product_photos(_), do: {:error, Error.new(:api, "product_photos must be a list", code: :invalid_input)}
 
   @doc false

@@ -136,5 +136,14 @@ defmodule ZcaEx.Api.Endpoints.CreateProductCatalogTest do
       assert {:error, error} = result
       assert error.code == :service_not_found
     end
+
+    test "returns error for non-string items in product_photos", %{session: session, credentials: credentials} do
+      photos = ["url1", 123, "url3"]
+      result = CreateProductCatalog.create("cat1", "Product", "100", "Desc", photos, session, credentials)
+
+      assert {:error, error} = result
+      assert error.message == "product_photos must contain only strings"
+      assert error.code == :invalid_input
+    end
   end
 end

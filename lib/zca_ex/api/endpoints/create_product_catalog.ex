@@ -84,8 +84,16 @@ defmodule ZcaEx.Api.Endpoints.CreateProductCatalog do
   defp validate_description(description) when is_binary(description) and byte_size(description) > 0, do: :ok
   defp validate_description(_), do: {:error, Error.new(:api, "description must be a non-empty string", code: :invalid_input)}
 
-  defp validate_product_photos(photos) when is_list(photos) and length(photos) <= @max_photos, do: :ok
-  defp validate_product_photos(photos) when is_list(photos), do: {:error, Error.new(:api, "product_photos must have at most #{@max_photos} items", code: :invalid_input)}
+  defp validate_product_photos(photos) when is_list(photos) do
+    cond do
+      length(photos) > @max_photos ->
+        {:error, Error.new(:api, "product_photos must have at most #{@max_photos} items", code: :invalid_input)}
+      not Enum.all?(photos, &is_binary/1) ->
+        {:error, Error.new(:api, "product_photos must contain only strings", code: :invalid_input)}
+      true ->
+        :ok
+    end
+  end
   defp validate_product_photos(_), do: {:error, Error.new(:api, "product_photos must be a list", code: :invalid_input)}
 
   @doc false

@@ -114,5 +114,61 @@ defmodule ZcaEx.Api.Endpoints.GetProductCatalogListTest do
       assert error.message == "catalog service URL not found"
       assert error.code == :service_not_found
     end
+
+    test "returns error for invalid limit", %{session: session, credentials: credentials} do
+      result = GetProductCatalogList.list("cat1", [limit: -1], session, credentials)
+
+      assert {:error, error} = result
+      assert error.message == "limit must be a positive integer"
+      assert error.code == :invalid_input
+    end
+
+    test "returns error for non-integer limit", %{session: session, credentials: credentials} do
+      result = GetProductCatalogList.list("cat1", [limit: "50"], session, credentials)
+
+      assert {:error, error} = result
+      assert error.message == "limit must be a positive integer"
+      assert error.code == :invalid_input
+    end
+
+    test "returns error for negative page", %{session: session, credentials: credentials} do
+      result = GetProductCatalogList.list("cat1", [page: -1], session, credentials)
+
+      assert {:error, error} = result
+      assert error.message == "page must be a non-negative integer"
+      assert error.code == :invalid_input
+    end
+
+    test "returns error for invalid version_catalog", %{session: session, credentials: credentials} do
+      result = GetProductCatalogList.list("cat1", [version_catalog: -1], session, credentials)
+
+      assert {:error, error} = result
+      assert error.message == "version_catalog must be a non-negative integer"
+      assert error.code == :invalid_input
+    end
+
+    test "returns error for invalid last_product_id", %{session: session, credentials: credentials} do
+      result = GetProductCatalogList.list("cat1", [last_product_id: ""], session, credentials)
+
+      assert {:error, error} = result
+      assert error.message == "last_product_id must be an integer or non-empty string"
+      assert error.code == :invalid_input
+    end
+
+    test "accepts valid integer last_product_id", %{session: session, credentials: credentials} do
+      session_no_service = %{session | zpw_service_map: %{}}
+      result = GetProductCatalogList.list("cat1", [last_product_id: 123], session_no_service, credentials)
+
+      assert {:error, error} = result
+      assert error.code == :service_not_found
+    end
+
+    test "accepts valid string last_product_id", %{session: session, credentials: credentials} do
+      session_no_service = %{session | zpw_service_map: %{}}
+      result = GetProductCatalogList.list("cat1", [last_product_id: "prod123"], session_no_service, credentials)
+
+      assert {:error, error} = result
+      assert error.code == :service_not_found
+    end
   end
 end

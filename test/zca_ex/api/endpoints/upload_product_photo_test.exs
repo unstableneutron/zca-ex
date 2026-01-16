@@ -90,5 +90,23 @@ defmodule ZcaEx.Api.Endpoints.UploadProductPhotoTest do
       assert error.message =~ "file service URL not found"
       assert error.code == :service_not_found
     end
+
+    test "returns error for missing send2me_id", %{session: session, credentials: credentials} do
+      session_no_send2me = %{session | login_info: %{}}
+      result = UploadProductPhoto.upload(session_no_send2me, credentials, "image_binary")
+
+      assert {:error, error} = result
+      assert error.message == "send2me_id missing from session"
+      assert error.code == :invalid_input
+    end
+
+    test "returns error for empty send2me_id", %{session: session, credentials: credentials} do
+      session_empty_send2me = %{session | login_info: %{"send2me_id" => ""}}
+      result = UploadProductPhoto.upload(session_empty_send2me, credentials, "image_binary")
+
+      assert {:error, error} = result
+      assert error.message == "send2me_id missing from session"
+      assert error.code == :invalid_input
+    end
   end
 end

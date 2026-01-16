@@ -35,11 +35,11 @@ defmodule ZcaEx.Api.Endpoints.UploadProductPhoto do
           {:ok, response()} | {:error, Error.t()}
   def upload(session, credentials, image_data, opts \\ []) do
     with :ok <- validate_image_data(image_data),
+         {:ok, toid} <- get_send2me_id(session),
          {:ok, service_url} <- get_service_url(session) do
       now = System.system_time(:millisecond)
       file_name = Keyword.get(opts, :file_name, "Base64_Img_Picker_#{now}.jpg")
       total_size = byte_size(image_data)
-      toid = get_send2me_id(session)
 
       params = build_params(file_name, now, total_size, credentials.imei, toid)
 
@@ -99,7 +99,12 @@ defmodule ZcaEx.Api.Endpoints.UploadProductPhoto do
   end
 
   defp get_send2me_id(session) do
-    get_in(session.login_info, ["send2me_id"]) || get_in(session.login_info, [:send2me_id]) || ""
+    case get_in(session.login_info, ["send2me_id"]) || get_in(session.login_info, [:send2me_id]) do
+      nil -> {:error, Error.new(:api, "send2me_id missing from session", code: :invalid_input)}
+      "" -> {:error, Error.new(:api, "send2me_id missing from session", code: :invalid_input)}
+      id when is_binary(id) -> {:ok, id}
+      _ -> {:error, Error.new(:api, "send2me_id missing from session", code: :invalid_input)}
+    end
   end
 
   defp transform_response(data) when is_map(data) do
