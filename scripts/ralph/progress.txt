@@ -285,3 +285,40 @@ Tests (test/zca_ex/api/endpoints/):
 - **Response data may be string or map**: Transform functions handle both `data["field"]` and `data[:field]` keys
 
 ---
+
+## 2026-01-16 - Batch 10: Quick Messages & Auto-Reply
+Thread: Thread: T-019bc630-81fb-71a4-ac25-3d74694f3618
+Task ID: 88
+
+### Implemented
+8 Quick Messages & Auto-Reply endpoints:
+
+**Quick Message endpoints (quick_message service):**
+- AddQuickMessage - /api/quickmessage/create (GET, params in query)
+- GetQuickMessageList - /api/quickmessage/list (GET)
+- UpdateQuickMessage - /api/quickmessage/update (GET)
+- RemoveQuickMessage - /api/quickmessage/delete (GET, itemIds as array)
+
+**Auto-Reply endpoints (auto_reply service, zBusiness):**
+- CreateAutoReply - /api/autoreply/create (POST)
+- GetAutoReplyList - /api/autoreply/list (GET)
+- UpdateAutoReply - /api/autoreply/update (POST)
+- DeleteAutoReply - /api/autoreply/delete (POST)
+
+### Files Changed
+Endpoints (lib/zca_ex/api/endpoints/):
+- add_quick_message.ex, get_quick_message_list.ex, update_quick_message.ex, remove_quick_message.ex
+- create_auto_reply.ex, get_auto_reply_list.ex, update_auto_reply.ex, delete_auto_reply.ex
+
+Tests (test/zca_ex/api/endpoints/):
+- Corresponding _test.exs for each endpoint (78 new tests, total now 1606)
+
+### Learnings for Future Iterations
+- **Non-raising get_service_url/1**: Use `{:ok, url} | {:error, Error.t()}` pattern instead of `raise` for missing service URLs to avoid crashing supervision trees
+- **Quick messages use GET with params in query**: Unlike auto-reply which uses POST for mutating operations
+- **Auto-reply scope parameter**: 0=all, 1=contacts_only, 2=specific_include, 3=specific_exclude; uids required only for scopes 2/3
+- **Auto-reply response uses "item" not "items"**: GetAutoReplyList returns `item: [...]` array (singular key)
+- **UpdateQuickMessage doesn't use imei**: Unlike AddQuickMessage, the update endpoint doesn't send imei per JS source
+- **recurrence field is array**: Auto-reply uses `["RRULE:FREQ=DAILY;"]` fixed array format
+
+---
