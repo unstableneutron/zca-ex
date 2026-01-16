@@ -216,3 +216,32 @@ Tests (test/zca_ex/api/endpoints/):
 - **All 16 endpoints use GET**: Encrypted params go in URL query string, not POST body
 
 ---
+
+## 2026-01-16 - Batch 8: Stickers & Media
+Thread: Thread: T-019bc5fe-d4af-7743-91f0-226f63af4985
+Task ID: 86
+
+### Implemented
+4 Stickers & Media endpoints (2 new, 2 already existed):
+- GetStickers - /api/message/sticker/suggest/stickers (GET, "sticker" service) - searches stickers by keyword
+- GetStickersDetail - /api/message/sticker/sticker_detail (GET, "sticker" service) - gets sticker details by ID
+- ParseLink - (already implemented) /api/message/parselink
+- GetQR - (already implemented) /api/friend/mget-qr
+
+### Files Changed
+New endpoints (lib/zca_ex/api/endpoints/):
+- get_stickers.ex
+- get_stickers_detail.ex
+
+Tests (test/zca_ex/api/endpoints/):
+- get_stickers_test.exs (18 tests)
+- get_stickers_detail_test.exs (17 tests)
+
+### Learnings for Future Iterations
+- **Sticker service has stable fallback URL**: Use `https://sticker.zalo.me` when service not in map
+- **Transform camelCase to snake_case**: Support both `cateId`/`:cateId` and `cate_id`/`:cate_id` keys for robustness
+- **Validate whitespace in keywords**: Trim strings before checking emptiness for search endpoints
+- **GetStickersDetail skips failures**: Like JS Promise.allSettled, continue on individual request failures and return partial results
+- **Consistent service URL fallback**: Use fallback pattern (`_ -> "https://..."`) instead of raising for stable services
+
+---
