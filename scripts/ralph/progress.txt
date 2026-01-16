@@ -369,4 +369,9 @@ Tests (test/zca_ex/api/endpoints/):
 - **thread_type for bank card**: :user (destType: 0) or :group (destType: 1)
 - **Account holder name uppercased**: SendBankCard auto-uppercases nameAccBank, defaults to "---"
 
+### Status After Batch 11
+- **Total endpoints implemented**: ~115 of ~130 JS endpoints
+- **Remaining API endpoints** (6): KeepAlive, GetFriendBoardList, GetListBoard, SendReport, ResetHiddenConversPin, UpdateHiddenConversPin
+- **Core/infrastructure** (not ported as endpoints): custom, listen, login, login_qr, get_context, get_cookie, get_own_id - handled at architecture level
+
 ---
