@@ -50,3 +50,43 @@ Tests (test/zca_ex/api/endpoints/):
 - **Message coercion**: Use `to_string_safe/1` pattern to handle nil/non-string safely
 
 ---
+
+## 2026-01-16 - Batch 4: Chat Settings
+Thread: Thread: T-019bc5da-06f7-756e-b336-3a11fc7db86d
+Task ID: 82
+
+### Implemented
+11 Chat Settings endpoints:
+- SetMute - /api/social/profile/setmute (POST, "profile" service)
+- GetMute - /api/social/profile/getmute (GET, "profile" service)
+- SetPinnedConversations - /api/pinconvers/updatev2 (POST, "conversation" service)
+- GetPinConversations - /api/pinconvers/list (GET, "conversation" service)
+- SetArchivedConversations - /api/archivedchat/update (POST, "label" service)
+- GetArchivedChatList - /api/archivedchat/list (GET, "label" service)
+- SetHiddenConversations - /api/hiddenconvers/add-remove (POST, "conversation" service)
+- GetHiddenConversations - /api/hiddenconvers/get-all (GET, "conversation" service)
+- DeleteChat - /api/message/deleteconver (user) or /api/group/deleteconver (group)
+- UpdateAutoDeleteChat - /api/conv/autodelete/updateConvers (POST, "conversation" service)
+- GetAutoDeleteChat - /api/conv/autodelete/getConvers (GET, "conversation" service)
+
+### Files Changed
+Endpoints (lib/zca_ex/api/endpoints/):
+- set_mute.ex, get_mute.ex
+- set_pinned_conversations.ex, get_pin_conversations.ex
+- set_archived_conversations.ex, get_archived_chat_list.ex
+- set_hidden_conversations.ex, get_hidden_conversations.ex
+- delete_chat.ex
+- update_auto_delete_chat.ex, get_auto_delete_chat.ex
+
+Tests (test/zca_ex/api/endpoints/):
+- Corresponding _test.exs for each endpoint (156 new tests)
+
+### Learnings for Future Iterations
+- **Multiple services in one batch**: Different endpoints use different services (profile, conversation, label)
+- **Service URL safety**: Always handle both list `[url | _]` and string `url` shapes from zpw_service_map
+- **Default args must be trailing**: Elixir requires defaults at end of param list (not in middle)
+- **Use Jason.encode/1 not encode!/1**: Avoid crashes; return `{:error, ...}` on encoding failures
+- **Verify JS POST body format**: Some endpoints use form body, some have encrypted params in URL query
+- **SetHiddenConversations uses JSON-stringified arrays**: `add_threads` and `del_threads` are JSON strings
+
+---
