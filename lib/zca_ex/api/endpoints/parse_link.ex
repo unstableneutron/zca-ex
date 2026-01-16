@@ -38,7 +38,7 @@ defmodule ZcaEx.Api.Endpoints.ParseLink do
           separator = if String.contains?(url, "?"), do: "&", else: "?"
           full_url = url <> separator <> "params=" <> URI.encode_www_form(encrypted_params)
 
-          case AccountClient.get(credentials.imei, full_url, credentials.user_agent) do
+          case AccountClient.get(session.uid, full_url, credentials.user_agent) do
             {:ok, response} ->
               Response.parse(response, session.secret_key)
               |> extract_data()

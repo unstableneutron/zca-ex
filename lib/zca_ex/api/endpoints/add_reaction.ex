@@ -66,7 +66,7 @@ defmodule ZcaEx.Api.Endpoints.AddReaction do
           url = build_url(target.thread_type, session)
           body = build_form_body(%{params: encrypted_params})
 
-          case AccountClient.post(credentials.imei, url, body, credentials.user_agent) do
+          case AccountClient.post(session.uid, url, body, credentials.user_agent) do
             {:ok, resp} ->
               Response.parse(resp, session.secret_key)
               |> transform_response()

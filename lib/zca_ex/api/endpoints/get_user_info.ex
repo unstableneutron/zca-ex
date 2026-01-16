@@ -40,7 +40,7 @@ defmodule ZcaEx.Api.Endpoints.GetUserInfo do
          {:ok, url} <- build_url(session) do
       body = build_form_body(%{params: encrypted_params})
 
-      case AccountClient.post(credentials.imei, url, body, credentials.user_agent) do
+      case AccountClient.post(session.uid, url, body, credentials.user_agent) do
         {:ok, response} ->
           Response.parse(response, session.secret_key)
 
