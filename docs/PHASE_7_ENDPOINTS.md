@@ -1,6 +1,6 @@
 # Phase 7: Remaining Endpoints Implementation
 
-## Status: 8 endpoints implemented, ~125 remaining
+## Status: 19 endpoints implemented, ~114 remaining
 
 ## Already Implemented
 - [x] addReaction
@@ -13,20 +13,22 @@
 - [x] uploadAttachment (Phase 6)
 - [x] loginQR (Phase 6)
 
-## Batch 1: Core Messaging (Priority: HIGH)
+## Batch 1: Core Messaging (Priority: HIGH) ✅ COMPLETE
 Essential for a functional chat client.
 
-| JS File | Elixir Module | Complexity | Notes |
-|---------|---------------|------------|-------|
-| sendSticker.ts | SendSticker | Medium | Uses sticker IDs |
-| sendLink.ts | SendLink | Medium | URL preview/parsing |
-| sendCard.ts | SendCard | Medium | Contact/business cards |
-| sendVideo.ts | SendVideo | High | Uses uploadAttachment |
-| sendVoice.ts | SendVoice | High | Audio upload |
-| sendDeliveredEvent.ts | SendDeliveredEvent | Low | Simple event |
-| forwardMessage.ts | ForwardMessage | Medium | Message forwarding |
-| deleteMessage.ts | DeleteMessage | Low | Undo/delete |
-| undo.ts | UndoMessage | Low | Undo last action |
+| JS File | Elixir Module | Complexity | Status |
+|---------|---------------|------------|--------|
+| sendSticker.ts | SendSticker | Medium | ✅ |
+| sendLink.ts | SendLink | Medium | ✅ |
+| sendCard.ts | SendCard | Medium | ✅ |
+| sendVideo.ts | SendVideo | High | ✅ |
+| sendVoice.ts | SendVoice | High | ✅ |
+| sendDeliveredEvent.ts | SendDeliveredEvent | Low | ✅ |
+| forwardMessage.ts | ForwardMessage | Medium | ✅ |
+| deleteMessage.ts | DeleteMessage | Low | ✅ |
+| undo.ts | UndoMessage | Low | ✅ |
+| parseLink.ts | ParseLink | Low | ✅ (helper) |
+| getQR.ts | GetQR | Low | ✅ (helper) |
 
 ## Batch 2: Group Management (Priority: HIGH)
 | JS File | Elixir Module | Complexity | Notes |
