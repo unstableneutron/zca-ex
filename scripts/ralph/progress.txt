@@ -127,3 +127,47 @@ Tests (test/zca_ex/api/endpoints/):
 - **Avoid Jason.encode!/1**: Use Jason.encode/1 with pattern match `{:ok, json}` to keep errors in-band
 
 ---
+
+## 2026-01-16 - Batch 6: Polls & Reminders
+Thread: Thread: T-019bc5e8-f90a-77d8-987f-115490324b94
+Task ID: 84
+
+### Implemented
+12 Polls & Reminders endpoints:
+
+**Poll endpoints (group service):**
+- CreatePoll - /api/poll/create (POST)
+- GetPollDetail - /api/poll/detail (POST)
+- VotePoll - /api/poll/vote (GET)
+- AddPollOptions - /api/poll/option/add (GET)
+- LockPoll - /api/poll/end (POST)
+- SharePoll - /api/poll/share (POST)
+
+**Reminder endpoints (group_board service):**
+- CreateReminder - /api/board/oneone/create (user) or /api/board/topic/createv2 (group) (POST)
+- EditReminder - /api/board/oneone/update (user) or /api/board/topic/updatev2 (group) (POST)
+- RemoveReminder - /api/board/oneone/remove (user) or /api/board/topic/remove (group) (POST)
+- GetReminder - /api/board/topic/getReminder (GET)
+- GetListReminder - /api/board/oneone/list (user) or /api/board/listReminder (group) (GET)
+- GetReminderResponses - /api/board/topic/listResponseEvent (GET)
+
+### Files Changed
+Endpoints (lib/zca_ex/api/endpoints/):
+- create_poll.ex, get_poll_detail.ex, vote_poll.ex, add_poll_options.ex, lock_poll.ex, share_poll.ex
+- create_reminder.ex, edit_reminder.ex, remove_reminder.ex
+- get_reminder.ex, get_list_reminder.ex, get_reminder_responses.ex
+
+Tests (test/zca_ex/api/endpoints/):
+- Corresponding _test.exs for each endpoint (161 new tests, total now 1222)
+
+### Learnings for Future Iterations
+- **poll_id is integer, not string**: JS uses `pollId: number` - validated as positive integer across all poll endpoints
+- **Different services for polls vs reminders**: Polls use "group", reminders use "group_board"
+- **Reminder endpoints have user/group variants**: Different URLs and params based on thread_type (:user | :group)
+- **Always validate thread_type**: Add `validate_thread_type/1` to avoid CaseClauseError on invalid input
+- **build_params returning {:ok, map()} not just map()**: When build_params uses Jason.encode, wrap return in {:ok, ...} and handle errors
+- **Use Jason.encode/1 consistently**: Never use Jason.encode!/1 to keep error handling consistent
+- **Nested JSON in reminders**: User reminders wrap params in objectData JSON string; group reminders have params inline
+- **GetListReminder returns nested JSON**: Response data field is a JSON string that needs parsing again
+
+---
