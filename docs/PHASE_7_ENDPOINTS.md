@@ -1,6 +1,6 @@
 # Phase 7: Remaining Endpoints Implementation
 
-## Status: 19 endpoints implemented, ~114 remaining
+## Status: 31 endpoints implemented, ~102 remaining
 
 ## Already Implemented
 - [x] addReaction
@@ -30,21 +30,21 @@ Essential for a functional chat client.
 | parseLink.ts | ParseLink | Low | ✅ (helper) |
 | getQR.ts | GetQR | Low | ✅ (helper) |
 
-## Batch 2: Group Management (Priority: HIGH)
-| JS File | Elixir Module | Complexity | Notes |
-|---------|---------------|------------|-------|
-| createGroup.ts | CreateGroup | Medium | Create new group |
-| getAllGroups.ts | GetAllGroups | Low | List user's groups |
-| addUserToGroup.ts | AddUserToGroup | Low | Add member |
-| removeUserFromGroup.ts | RemoveUserFromGroup | Low | Remove member |
-| leaveGroup.ts | LeaveGroup | Low | Leave group |
-| changeGroupName.ts | ChangeGroupName | Low | Rename |
-| changeGroupAvatar.ts | ChangeGroupAvatar | Medium | Uses upload |
-| changeGroupOwner.ts | ChangeGroupOwner | Low | Transfer ownership |
-| addGroupDeputy.ts | AddGroupDeputy | Low | Add admin |
-| removeGroupDeputy.ts | RemoveGroupDeputy | Low | Remove admin |
-| disperseGroup.ts | DisperseGroup | Low | Delete group |
-| updateGroupSettings.ts | UpdateGroupSettings | Medium | Various settings |
+## Batch 2: Group Management (Priority: HIGH) ✅ COMPLETE
+| JS File | Elixir Module | Complexity | Status |
+|---------|---------------|------------|--------|
+| createGroup.ts | CreateGroup | Medium | ✅ |
+| getAllGroups.ts | GetAllGroups | Low | ✅ |
+| addUserToGroup.ts | AddUserToGroup | Low | ✅ |
+| removeUserFromGroup.ts | RemoveUserFromGroup | Low | ✅ |
+| leaveGroup.ts | LeaveGroup | Low | ✅ |
+| changeGroupName.ts | ChangeGroupName | Low | ✅ |
+| changeGroupAvatar.ts | ChangeGroupAvatar | Medium | ✅ |
+| changeGroupOwner.ts | ChangeGroupOwner | Low | ✅ |
+| addGroupDeputy.ts | AddGroupDeputy | Low | ✅ |
+| removeGroupDeputy.ts | RemoveGroupDeputy | Low | ✅ |
+| disperseGroup.ts | DisperseGroup | Low | ✅ |
+| updateGroupSettings.ts | UpdateGroupSettings | Medium | ✅ |
 
 ## Batch 3: Friend Management (Priority: HIGH)
 | JS File | Elixir Module | Complexity | Notes |
