@@ -85,7 +85,7 @@ defmodule ZcaEx.Api.Endpoints.GetSentFriendRequest do
     case get_in(session.zpw_service_map, ["friend"]) do
       [url | _] when is_binary(url) -> {:ok, url}
       url when is_binary(url) -> {:ok, url}
-      _ -> {:error, Error.new(:api, "friend service URL not found", code: :invalid_input)}
+      _ -> {:error, Error.new(:api, "friend service URL not found", code: :service_not_found)}
     end
   end
 end

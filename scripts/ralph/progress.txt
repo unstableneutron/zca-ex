@@ -378,3 +378,47 @@ Tests (test/zca_ex/api/endpoints/):
 - **Core/infrastructure** (not ported as endpoints): custom, listen, login, login_qr, get_context, get_cookie, get_own_id - handled at architecture level
 
 ---
+
+## 2026-01-16 - Batch 12: Misc Getters & Final Endpoints
+Thread: Thread: T-019bc64b-5939-768d-a264-d33a008bb1e7
+Task ID: 90
+
+### Implemented
+6 Misc/Getter endpoints (final batch):
+- GetFriendBoardList - /api/friendboard/list (GET, "friend_board" service)
+- GetListBoard - /api/board/list (GET, "group_board" service, parses JSON in items[].data.params for non-poll types)
+- KeepAlive - /keepalive (GET, "chat" service, unencrypted response)
+- ResetHiddenConversPin - /api/hiddenconvers/reset (GET, "conversation" service, empty params)
+- UpdateHiddenConversPin - /api/hiddenconvers/update-pin (GET, "conversation" service, MD5-hashed 4-digit pin)
+- SendReport - /api/report/abuse-v2 (user) or /api/social/profile/reportabuse (group), POST, "profile" service
+
+### Files Changed
+Endpoints (lib/zca_ex/api/endpoints/):
+- get_friend_board_list.ex
+- get_list_board.ex
+- keep_alive.ex
+- reset_hidden_convers_pin.ex
+- update_hidden_convers_pin.ex
+- send_report.ex
+
+Tests (test/zca_ex/api/endpoints/):
+- Corresponding _test.exs for each endpoint (98 new tests, total now 1926)
+
+### Learnings for Future Iterations
+- **boardType is camelCase in JS response**: Use `item["boardType"]` not `item["board_type"]` when reading from API
+- **Poll board type (1) skips params parsing**: JS only JSON-parses `item.data.params` when `boardType != Poll`
+- **Duplicate key prevention**: When parsing JSON string to replace "params", delete both string and atom keys first, then add atom key
+- **Validate pagination opts**: page/count should be positive integers, not just any value
+- **KeepAlive returns unencrypted response**: Use Response.parse_unencrypted/1, not Response.parse/2
+- **Response coercion**: coerce config_version to integer with default 0 for robustness
+- **SendReport validates response shape**: Return error if reportId missing rather than empty string
+- **encryptPin uses MD5**: `:crypto.hash(:md5, pin) |> Base.encode16(case: :lower)`
+- **Pin validation**: 4-digit string matching `~r/^\d{4}$/`
+
+### Status After Batch 12
+- **Total endpoints implemented**: ~121 of ~130 JS endpoints
+- **All Batch 12 endpoints complete**: GetFriendBoardList, GetListBoard, KeepAlive, ResetHiddenConversPin, UpdateHiddenConversPin, SendReport
+- **1926 tests passing**
+- **Core/infrastructure** (not ported as endpoints): custom, listen, login, login_qr, get_context, get_cookie, get_own_id - handled at architecture level
+
+---

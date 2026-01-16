@@ -57,7 +57,7 @@ defmodule ZcaEx.Api.Endpoints.GetSentFriendRequestTest do
 
       assert {:error, error} = GetSentFriendRequest.build_base_url(session)
       assert error.category == :api
-      assert error.code == :invalid_input
+      assert error.code == :service_not_found
       assert error.message =~ "friend service URL not found"
     end
   end

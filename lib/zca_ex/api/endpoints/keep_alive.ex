@@ -1,32 +1,30 @@
-defmodule ZcaEx.Api.Endpoints.LastOnline do
-  @moduledoc "Get a user's last online time"
+defmodule ZcaEx.Api.Endpoints.KeepAlive do
+  @moduledoc "Keep connection alive to the chat service"
 
   use ZcaEx.Api.Factory
 
   alias ZcaEx.Error
 
   @doc """
-  Get a user's last online time.
+  Send a keep-alive request to the chat service.
 
   ## Parameters
-    - user_id: User ID (non-empty string)
     - session: Authenticated session
     - credentials: Account credentials
 
   ## Returns
-    - `{:ok, %{settings: %{show_online_status: boolean}, last_online: integer}}` on success
+    - `{:ok, %{config_version: integer}}` on success
     - `{:error, Error.t()}` on failure
-  """
-  @spec get(String.t(), Session.t(), Credentials.t()) :: {:ok, map()} | {:error, Error.t()}
-  def get(user_id, _session, _credentials)
-      when not is_binary(user_id) or user_id == "" do
-    {:error, Error.new(:api, "user_id must be a non-empty string", code: :invalid_input)}
-  end
 
-  def get(user_id, session, credentials) do
+  ## Notes
+    - Response is NOT encrypted
+    - JS API has typo "config_vesion", normalized to "config_version" here
+  """
+  @spec call(Session.t(), Credentials.t()) :: {:ok, map()} | {:error, Error.t()}
+  def call(session, credentials) do
     case get_service_url(session) do
       {:ok, service_url} ->
-        params = build_params(user_id, credentials.imei)
+        params = build_params(credentials.imei)
 
         case encrypt_params(session.secret_key, params) do
           {:ok, encrypted_params} ->
@@ -34,7 +32,7 @@ defmodule ZcaEx.Api.Endpoints.LastOnline do
 
             case AccountClient.get(session.uid, url, credentials.user_agent) do
               {:ok, response} ->
-                case Response.parse(response, session.secret_key) do
+                case Response.parse_unencrypted(response) do
                   {:ok, data} -> {:ok, transform_response(data)}
                   {:error, _} = error -> error
                 end
@@ -52,10 +50,10 @@ defmodule ZcaEx.Api.Endpoints.LastOnline do
     end
   end
 
-  @doc "Build URL for last online endpoint with encrypted params"
+  @doc "Build URL for keep alive endpoint with encrypted params"
   @spec build_url(String.t(), Session.t(), String.t()) :: String.t()
   def build_url(service_url, session, encrypted_params) do
-    base_url = service_url <> "/api/social/profile/lastOnline"
+    base_url = service_url <> "/keepalive"
     Url.build_for_session(base_url, %{params: encrypted_params}, session)
   end
 
@@ -64,7 +62,7 @@ defmodule ZcaEx.Api.Endpoints.LastOnline do
   def build_base_url(session) do
     case get_service_url(session) do
       {:ok, service_url} ->
-        base_url = service_url <> "/api/social/profile/lastOnline"
+        base_url = service_url <> "/keepalive"
         {:ok, Url.build_for_session(base_url, %{}, session)}
 
       {:error, _} = error ->
@@ -73,30 +71,38 @@ defmodule ZcaEx.Api.Endpoints.LastOnline do
   end
 
   @doc "Build params for encryption"
-  @spec build_params(String.t(), String.t()) :: map()
-  def build_params(user_id, imei) do
-    %{uid: user_id, conv_type: 1, imei: imei}
+  @spec build_params(String.t()) :: map()
+  def build_params(imei) do
+    %{imei: imei}
   end
 
-  @doc "Transform response data"
+  @doc "Transform response data (normalizes JS typo 'config_vesion' to 'config_version')"
   @spec transform_response(map()) :: map()
   def transform_response(data) when is_map(data) do
-    settings = data["settings"] || data[:settings] || %{}
-    show_online_status = settings["show_online_status"] || settings[:show_online_status]
+    config_version =
+      Map.get(data, "config_vesion") ||
+        Map.get(data, :config_vesion) ||
+        Map.get(data, "config_version") ||
+        Map.get(data, :config_version) ||
+        0
 
-    %{
-      settings: %{
-        show_online_status: show_online_status
-      },
-      last_online: data["lastOnline"] || data[:lastOnline] || data["last_online"] || data[:last_online]
-    }
+    %{config_version: coerce_to_integer(config_version)}
   end
 
+  defp coerce_to_integer(val) when is_integer(val), do: val
+  defp coerce_to_integer(val) when is_binary(val) do
+    case Integer.parse(val) do
+      {int, _} -> int
+      :error -> 0
+    end
+  end
+  defp coerce_to_integer(_), do: 0
+
   defp get_service_url(session) do
-    case get_in(session.zpw_service_map, ["profile"]) do
+    case get_in(session.zpw_service_map, ["chat"]) do
       [url | _] when is_binary(url) -> {:ok, url}
       url when is_binary(url) -> {:ok, url}
-      _ -> {:error, Error.new(:api, "profile service URL not found", code: :service_not_found)}
+      _ -> {:error, Error.new(:api, "chat service URL not found", code: :service_not_found)}
     end
   end
 end

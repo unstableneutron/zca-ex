@@ -23,9 +23,8 @@ defmodule ZcaEx.Api.Endpoints.GetRelatedFriendGroup do
     friend_ids_list = normalize_friend_ids(friend_ids)
 
     with :ok <- validate_friend_ids(friend_ids_list),
-         {:ok, service_url} <- get_service_url(session) do
-      params = build_params(friend_ids_list, credentials.imei)
-
+         {:ok, service_url} <- get_service_url(session),
+         {:ok, params} <- build_params(friend_ids_list, credentials.imei) do
       case encrypt_params(session.secret_key, params) do
         {:ok, encrypted_params} ->
           url = build_url(service_url, session)
@@ -90,12 +89,15 @@ defmodule ZcaEx.Api.Endpoints.GetRelatedFriendGroup do
   end
 
   @doc "Build params for encryption"
-  @spec build_params([String.t()], String.t()) :: map()
+  @spec build_params([String.t()], String.t()) :: {:ok, map()} | {:error, Error.t()}
   def build_params(friend_ids, imei) do
-    %{
-      friend_ids: Jason.encode!(friend_ids),
-      imei: imei
-    }
+    case Jason.encode(friend_ids) do
+      {:ok, json} ->
+        {:ok, %{friend_ids: json, imei: imei}}
+
+      {:error, reason} ->
+        {:error, Error.new(:api, "Failed to encode friend_ids: #{inspect(reason)}", code: :invalid_input)}
+    end
   end
 
   @doc "Transform response data"

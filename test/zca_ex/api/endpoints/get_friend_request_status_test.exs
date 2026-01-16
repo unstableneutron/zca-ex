@@ -29,10 +29,22 @@ defmodule ZcaEx.Api.Endpoints.GetFriendRequestStatusTest do
   end
 
   describe "build_params/2" do
-    test "builds params with fid and imei" do
-      params = GetFriendRequestStatus.build_params("friend123", "test-imei-123")
+    test "builds correct params" do
+      params = GetFriendRequestStatus.build_params("friend123", "test-imei")
 
-      assert params == %{fid: "friend123", imei: "test-imei-123"}
+      assert params == %{fid: "friend123", imei: "test-imei"}
+    end
+  end
+
+  describe "build_url/3" do
+    test "builds URL with encrypted params", %{session: session} do
+      encrypted = "encryptedParamsString123"
+      url = GetFriendRequestStatus.build_url("https://friend.zalo.me", session, encrypted)
+
+      assert url =~ "https://friend.zalo.me/api/friend/reqstatus"
+      assert url =~ "params=encryptedParamsString123"
+      assert url =~ "zpw_ver=645"
+      assert url =~ "zpw_type=30"
     end
   end
 
@@ -56,26 +68,48 @@ defmodule ZcaEx.Api.Endpoints.GetFriendRequestStatusTest do
       session = %{session | zpw_service_map: %{}}
 
       assert {:error, error} = GetFriendRequestStatus.build_base_url(session)
-      assert error.category == :api
-      assert error.code == :invalid_input
       assert error.message =~ "friend service URL not found"
+      assert error.code == :service_not_found
     end
   end
 
-  describe "build_url/3" do
-    test "builds URL with encrypted params in query", %{session: session} do
-      encrypted = "encryptedParamsString123"
-      url = GetFriendRequestStatus.build_url("https://friend.zalo.me", session, encrypted)
+  describe "get/3 validation" do
+    test "returns error for empty friend_id", %{session: session, credentials: credentials} do
+      result = GetFriendRequestStatus.get("", session, credentials)
 
-      assert url =~ "https://friend.zalo.me/api/friend/reqstatus"
-      assert url =~ "params=encryptedParamsString123"
-      assert url =~ "zpw_ver=645"
-      assert url =~ "zpw_type=30"
+      assert {:error, error} = result
+      assert error.message == "friend_id must be a non-empty string"
+      assert error.code == :invalid_input
+    end
+
+    test "returns error for nil friend_id", %{session: session, credentials: credentials} do
+      result = GetFriendRequestStatus.get(nil, session, credentials)
+
+      assert {:error, error} = result
+      assert error.message == "friend_id must be a non-empty string"
+      assert error.code == :invalid_input
+    end
+
+    test "returns error for non-string friend_id", %{session: session, credentials: credentials} do
+      result = GetFriendRequestStatus.get(123, session, credentials)
+
+      assert {:error, error} = result
+      assert error.message == "friend_id must be a non-empty string"
+      assert error.code == :invalid_input
+    end
+
+    test "returns error for missing service URL", %{session: session, credentials: credentials} do
+      session_no_service = %{session | zpw_service_map: %{}}
+      result = GetFriendRequestStatus.get("friend123", session_no_service, credentials)
+
+      assert {:error, error} = result
+      assert error.message =~ "friend service URL not found"
+      assert error.code == :service_not_found
     end
   end
 
   describe "transform_response/1" do
-    test "returns data as-is" do
+    test "returns response data as-is" do
       data = %{
         "addFriendPrivacy" => 1,
         "isSeenFriendReq" => true,
@@ -89,26 +123,10 @@ defmodule ZcaEx.Api.Endpoints.GetFriendRequestStatusTest do
       assert result == data
     end
 
-    test "handles empty map" do
+    test "handles empty response" do
       result = GetFriendRequestStatus.transform_response(%{})
 
       assert result == %{}
-    end
-  end
-
-  describe "get/3 validation" do
-    test "returns error for empty friend_id", %{session: session, credentials: credentials} do
-      assert {:error, error} = GetFriendRequestStatus.get("", session, credentials)
-      assert error.category == :api
-      assert error.code == :invalid_input
-      assert error.message =~ "friend_id must be a non-empty string"
-    end
-
-    test "returns error for nil friend_id", %{session: session, credentials: credentials} do
-      assert {:error, error} = GetFriendRequestStatus.get(nil, session, credentials)
-      assert error.category == :api
-      assert error.code == :invalid_input
-      assert error.message =~ "friend_id must be a non-empty string"
     end
   end
 end

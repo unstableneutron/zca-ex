@@ -29,12 +29,12 @@ defmodule ZcaEx.Api.Endpoints.GetRelatedFriendGroupTest do
   end
 
   describe "normalize_friend_ids/1" do
-    test "wraps single string in list" do
+    test "normalizes string to list" do
       assert GetRelatedFriendGroup.normalize_friend_ids("friend123") == ["friend123"]
     end
 
-    test "returns list as-is" do
-      assert GetRelatedFriendGroup.normalize_friend_ids(["a", "b"]) == ["a", "b"]
+    test "keeps list as list" do
+      assert GetRelatedFriendGroup.normalize_friend_ids(["f1", "f2"]) == ["f1", "f2"]
     end
 
     test "returns empty list for invalid input" do
@@ -44,42 +44,53 @@ defmodule ZcaEx.Api.Endpoints.GetRelatedFriendGroupTest do
   end
 
   describe "validate_friend_ids/1" do
-    test "returns :ok for valid list of strings" do
-      assert :ok == GetRelatedFriendGroup.validate_friend_ids(["friend1", "friend2"])
-    end
-
-    test "returns :ok for single item list" do
-      assert :ok == GetRelatedFriendGroup.validate_friend_ids(["friend1"])
+    test "returns :ok for valid list" do
+      assert :ok = GetRelatedFriendGroup.validate_friend_ids(["friend123"])
+      assert :ok = GetRelatedFriendGroup.validate_friend_ids(["f1", "f2", "f3"])
     end
 
     test "returns error for empty list" do
-      assert {:error, %ZcaEx.Error{message: "friend_ids must not be empty"}} =
-               GetRelatedFriendGroup.validate_friend_ids([])
+      assert {:error, error} = GetRelatedFriendGroup.validate_friend_ids([])
+      assert error.message == "friend_ids must not be empty"
+      assert error.code == :invalid_input
     end
 
-    test "returns error when list contains empty string" do
-      assert {:error, %ZcaEx.Error{message: "all friend_ids must be non-empty strings"}} =
-               GetRelatedFriendGroup.validate_friend_ids(["friend1", ""])
+    test "returns error for list with empty strings" do
+      assert {:error, error} = GetRelatedFriendGroup.validate_friend_ids(["f1", ""])
+      assert error.message == "all friend_ids must be non-empty strings"
+      assert error.code == :invalid_input
     end
 
-    test "returns error when list contains non-string" do
-      assert {:error, %ZcaEx.Error{message: "all friend_ids must be non-empty strings"}} =
-               GetRelatedFriendGroup.validate_friend_ids(["friend1", 123])
+    test "returns error for list with non-string elements" do
+      assert {:error, error} = GetRelatedFriendGroup.validate_friend_ids(["f1", 123])
+      assert error.message == "all friend_ids must be non-empty strings"
+      assert error.code == :invalid_input
     end
   end
 
   describe "build_params/2" do
-    test "builds params with JSON-encoded friend_ids and imei" do
-      params = GetRelatedFriendGroup.build_params(["friend1", "friend2"], "test-imei")
+    test "builds correct params with JSON-encoded friend_ids" do
+      {:ok, params} = GetRelatedFriendGroup.build_params(["friend1", "friend2"], "test-imei")
 
       assert params.friend_ids == ~s(["friend1","friend2"])
       assert params.imei == "test-imei"
     end
 
-    test "builds params with single friend_id" do
-      params = GetRelatedFriendGroup.build_params(["friend1"], "test-imei")
+    test "builds params for single friend_id" do
+      {:ok, params} = GetRelatedFriendGroup.build_params(["friend123"], "test-imei")
 
-      assert params.friend_ids == ~s(["friend1"])
+      assert params.friend_ids == ~s(["friend123"])
+      assert params.imei == "test-imei"
+    end
+  end
+
+  describe "build_url/2" do
+    test "builds correct URL", %{session: session} do
+      url = GetRelatedFriendGroup.build_url("https://friend.zalo.me", session)
+
+      assert url =~ "https://friend.zalo.me/api/friend/group/related"
+      assert url =~ "zpw_ver=645"
+      assert url =~ "zpw_type=30"
     end
   end
 
@@ -102,23 +113,52 @@ defmodule ZcaEx.Api.Endpoints.GetRelatedFriendGroupTest do
     test "returns error when service URL not found", %{session: session} do
       session = %{session | zpw_service_map: %{}}
 
-      assert {:error, %ZcaEx.Error{message: "friend service URL not found"}} =
-               GetRelatedFriendGroup.build_base_url(session)
+      assert {:error, error} = GetRelatedFriendGroup.build_base_url(session)
+      assert error.message =~ "friend service URL not found"
+      assert error.code == :service_not_found
     end
   end
 
-  describe "build_url/2" do
-    test "builds URL without params in query", %{session: session} do
-      url = GetRelatedFriendGroup.build_url("https://friend.zalo.me", session)
+  describe "get/3 validation" do
+    test "returns error for empty friend_ids list", %{session: session, credentials: credentials} do
+      result = GetRelatedFriendGroup.get([], session, credentials)
 
-      assert url =~ "https://friend.zalo.me/api/friend/group/related"
-      assert url =~ "zpw_ver=645"
-      assert url =~ "zpw_type=30"
+      assert {:error, error} = result
+      assert error.message == "friend_ids must not be empty"
+      assert error.code == :invalid_input
+    end
+
+    test "returns error for invalid friend_ids", %{session: session, credentials: credentials} do
+      result = GetRelatedFriendGroup.get(123, session, credentials)
+
+      assert {:error, error} = result
+      assert error.message == "friend_ids must not be empty"
+      assert error.code == :invalid_input
+    end
+
+    test "returns error for list with invalid elements", %{
+      session: session,
+      credentials: credentials
+    } do
+      result = GetRelatedFriendGroup.get(["valid", ""], session, credentials)
+
+      assert {:error, error} = result
+      assert error.message == "all friend_ids must be non-empty strings"
+      assert error.code == :invalid_input
+    end
+
+    test "returns error for missing service URL", %{session: session, credentials: credentials} do
+      session_no_service = %{session | zpw_service_map: %{}}
+      result = GetRelatedFriendGroup.get("friend123", session_no_service, credentials)
+
+      assert {:error, error} = result
+      assert error.message =~ "friend service URL not found"
+      assert error.code == :service_not_found
     end
   end
 
   describe "transform_response/1" do
-    test "transforms groupRelateds map" do
+    test "transforms groupRelateds from response" do
       data = %{
         "groupRelateds" => %{
           "friend1" => ["group1", "group2"],
@@ -134,23 +174,7 @@ defmodule ZcaEx.Api.Endpoints.GetRelatedFriendGroupTest do
              }
     end
 
-    test "handles empty groupRelateds" do
-      data = %{"groupRelateds" => %{}}
-
-      result = GetRelatedFriendGroup.transform_response(data)
-
-      assert result.group_relateds == %{}
-    end
-
-    test "handles missing groupRelateds" do
-      data = %{}
-
-      result = GetRelatedFriendGroup.transform_response(data)
-
-      assert result.group_relateds == %{}
-    end
-
-    test "handles atom keys in response" do
+    test "handles atom key groupRelateds" do
       data = %{
         groupRelateds: %{"friend1" => ["group1"]}
       }
@@ -160,7 +184,7 @@ defmodule ZcaEx.Api.Endpoints.GetRelatedFriendGroupTest do
       assert result.group_relateds == %{"friend1" => ["group1"]}
     end
 
-    test "handles snake_case keys in response" do
+    test "handles snake_case group_relateds" do
       data = %{
         "group_relateds" => %{"friend1" => ["group1"]}
       }
@@ -169,29 +193,19 @@ defmodule ZcaEx.Api.Endpoints.GetRelatedFriendGroupTest do
 
       assert result.group_relateds == %{"friend1" => ["group1"]}
     end
-  end
 
-  describe "get/3 validation" do
-    test "returns error for empty string friend_id", %{session: session, credentials: credentials} do
-      assert {:error, %ZcaEx.Error{message: "all friend_ids must be non-empty strings"}} =
-               GetRelatedFriendGroup.get("", session, credentials)
+    test "handles missing groupRelateds" do
+      result = GetRelatedFriendGroup.transform_response(%{})
+
+      assert result.group_relateds == %{}
     end
 
-    test "returns error for empty list", %{session: session, credentials: credentials} do
-      assert {:error, %ZcaEx.Error{message: "friend_ids must not be empty"}} =
-               GetRelatedFriendGroup.get([], session, credentials)
-    end
+    test "handles empty groupRelateds" do
+      data = %{"groupRelateds" => %{}}
 
-    test "returns error for list with empty string", %{session: session, credentials: credentials} do
-      assert {:error, %ZcaEx.Error{message: "all friend_ids must be non-empty strings"}} =
-               GetRelatedFriendGroup.get(["valid", ""], session, credentials)
-    end
+      result = GetRelatedFriendGroup.transform_response(data)
 
-    test "returns error when service URL not found", %{session: session, credentials: credentials} do
-      session_no_service = %{session | zpw_service_map: %{}}
-
-      assert {:error, %ZcaEx.Error{message: "friend service URL not found"}} =
-               GetRelatedFriendGroup.get("friend1", session_no_service, credentials)
+      assert result.group_relateds == %{}
     end
   end
 end
