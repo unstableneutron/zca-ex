@@ -171,3 +171,48 @@ Tests (test/zca_ex/api/endpoints/):
 - **GetListReminder returns nested JSON**: Response data field is a JSON string that needs parsing again
 
 ---
+
+## 2026-01-16 - Batch 7: Group Advanced
+Thread: Thread: T-019bc5f3-d500-754f-81dd-9664e2517190
+Task ID: 85
+
+### Implemented
+16 Group Advanced endpoints:
+- GetGroupMembersInfo - /api/social/group/members (GET, "profile" service, appends "_0" to member IDs)
+- GetGroupBlockedMember - /api/group/blockedmems/list (GET)
+- AddGroupBlockedMember - /api/group/blockedmems/add (GET)
+- RemoveGroupBlockedMember - /api/group/blockedmems/remove (GET)
+- GetPendingGroupMembers - /api/group/pending-mems/list (GET)
+- ReviewPendingMemberRequest - /api/group/pending-mems/review (GET, isApprove 1/0)
+- InviteUserToGroups - /api/group/invite/multi (GET)
+- EnableGroupLink - /api/group/link/new (GET)
+- DisableGroupLink - /api/group/link/disable (GET, no imei per JS source)
+- GetGroupLinkDetail - /api/group/link/detail (GET)
+- GetGroupLinkInfo - /api/group/link/ginfo (GET)
+- JoinGroupLink - /api/group/link/join (GET)
+- GetGroupInviteBoxInfo - /api/group/inv-box/inv-info (GET, uses grId not grid)
+- GetGroupInviteBoxList - /api/group/inv-box/list (GET)
+- DeleteGroupInviteBox - /api/group/inv-box/mdel-inv (GET, JSON-stringified invitations)
+- JoinGroupInviteBox - /api/group/inv-box/join (GET)
+
+### Files Changed
+Endpoints (lib/zca_ex/api/endpoints/):
+- get_group_members_info.ex, get_group_blocked_member.ex, add_group_blocked_member.ex, remove_group_blocked_member.ex
+- get_pending_group_members.ex, review_pending_member_request.ex, invite_user_to_groups.ex
+- enable_group_link.ex, disable_group_link.ex, get_group_link_detail.ex, get_group_link_info.ex, join_group_link.ex
+- get_group_invite_box_info.ex, get_group_invite_box_list.ex, delete_group_invite_box.ex, join_group_invite_box.ex
+
+Tests (test/zca_ex/api/endpoints/):
+- Corresponding _test.exs for each endpoint (152 new tests, total now 1374)
+
+### Learnings for Future Iterations
+- **GetGroupMembersInfo uses "profile" service, not "group"**: Different from all other group endpoints
+- **GetGroupMembersInfo appends "_0" suffix**: member IDs need `_0` suffix if not already present
+- **GetGroupInviteBoxInfo uses `grId` not `grid`**: Parameter naming exception
+- **DisableGroupLink has no imei**: Unlike EnableGroupLink/GetGroupLinkDetail, per JS source
+- **DeleteGroupInviteBox JSON-encodes invitations**: `invitations` param is JSON string of `[{grid: id}, ...]`
+- **Strict boolean validation**: Use `when not is_boolean(param)` guard to reject truthy non-booleans
+- **Consistent error codes**: Use `:invalid_input` for all validation errors
+- **All 16 endpoints use GET**: Encrypted params go in URL query string, not POST body
+
+---
