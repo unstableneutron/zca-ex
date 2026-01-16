@@ -1,0 +1,52 @@
+# Ralph Progress Log
+Started: 2026-01-16
+Feature: ZcaEx Phase 7 Batches 3-12
+
+## Codebase Patterns
+- Use `use ZcaEx.Api.Factory` macro (imports encrypt_params/2, build_form_body/1)
+- Return `{:ok, result} | {:error, ZcaEx.Error.t()}`
+- Use session.zpw_service_map for base URLs: ["chat", Access.at(0)] for messaging, ["group", Access.at(0)] for groups
+- Use Url.build/4 or Url.build_for_session/3 for URL construction
+- Use AccountClient.post/5 or AccountClient.get/4 for requests
+- Use Response.parse/2 to decrypt and parse responses
+- CRITICAL: AccountClient first param must be session.uid for per-account cookie isolation
+- JS source at ~/Projects/zca-js/src/apis/*.ts for exact API params
+
+---
+
+## 2026-01-16 - Batch 3: Friend Management
+Thread: Thread: T-019bc5d4-2990-7451-a030-eb288046bac4
+Task ID: 81
+
+### Implemented
+10 Friend Management endpoints:
+- SendFriendRequest - /api/friend/sendreq (POST)
+- AcceptFriendRequest - /api/friend/accept (POST)
+- RejectFriendRequest - /api/friend/reject (POST)
+- UndoFriendRequest - /api/friend/undo (POST)
+- RemoveFriend - /api/friend/remove (POST)
+- BlockUser - /api/friend/block (POST)
+- UnblockUser - /api/friend/unblock (POST)
+- FindUser - /api/friend/profile/get (GET with params in query)
+- ChangeFriendAlias - /api/alias/update (GET, uses "alias" service)
+- RemoveFriendAlias - /api/alias/remove (GET, uses "alias" service)
+
+### Files Changed
+Endpoints (lib/zca_ex/api/endpoints/):
+- send_friend_request.ex, accept_friend_request.ex, reject_friend_request.ex, undo_friend_request.ex
+- remove_friend.ex, block_user.ex, unblock_user.ex
+- find_user.ex
+- change_friend_alias.ex, remove_friend_alias.ex
+
+Tests (test/zca_ex/api/endpoints/):
+- Corresponding _test.exs for each endpoint (105 new tests)
+
+### Learnings for Future Iterations
+- **Alias service uses different URL**: `["alias", Access.at(0)]` not `["friend", ...]`
+- **FindUser is GET not POST**: Params go in query string, use AccountClient.get
+- **Phone normalization**: Vietnamese phones starting with "0" need "84" prefix
+- **Always validate inputs**: Add validation for required params before processing
+- **Support both string and atom keys in response transformation**: API may return either
+- **Message coercion**: Use `to_string_safe/1` pattern to handle nil/non-string safely
+
+---
