@@ -46,7 +46,7 @@ defmodule ZcaEx.WS.Connection do
           conn: Mint.HTTP.t() | nil,
           websocket: Mint.WebSocket.t() | nil,
           ref: reference() | nil,
-          cipher_key: String.t() | nil,
+          cipher_key: binary() | nil,
           ping_timer: reference() | nil,
           user_agent: String.t() | nil,
           upgrade_status: non_neg_integer() | nil,
@@ -261,16 +261,19 @@ defmodule ZcaEx.WS.Connection do
       {"accept-encoding", "gzip, deflate, br, zstd"},
       {"accept-language", "en-US,en;q=0.9"},
       {"cache-control", "no-cache"},
+      {"host", uri.host},
       {"origin", "https://chat.zalo.me"},
+      {"pragma", "no-cache"},
       {"user-agent", user_agent},
       {"cookie", cookies}
     ]
 
-    scheme = if uri.scheme == "wss", do: :https, else: :http
-    port = uri.port || if(scheme == :https, do: 443, else: 80)
+    http_scheme = if uri.scheme == "wss", do: :https, else: :http
+    ws_scheme = if uri.scheme == "wss", do: :wss, else: :ws
+    port = uri.port || if(http_scheme == :https, do: 443, else: 80)
 
-    with {:ok, conn} <- Mint.HTTP.connect(scheme, uri.host, port, protocols: [:http1]),
-         {:ok, conn, ref} <- Mint.WebSocket.upgrade(scheme, conn, ws_path(uri), headers) do
+    with {:ok, conn} <- Mint.HTTP.connect(http_scheme, uri.host, port, protocols: [:http1]),
+         {:ok, conn, ref} <- Mint.WebSocket.upgrade(ws_scheme, conn, ws_path(uri), headers) do
       {:ok, %{state | conn: conn, ref: ref, state: :connecting, connect_start_time: start_time}}
     end
   end
@@ -406,7 +409,7 @@ defmodule ZcaEx.WS.Connection do
 
       {:error, conn, reason} ->
         Logger.error("WebSocket handshake failed: #{inspect(reason)}")
-        %{state | conn: conn}
+        do_disconnect(%{state | conn: conn}, :handshake_failed)
     end
   end
 
@@ -423,7 +426,16 @@ defmodule ZcaEx.WS.Connection do
   end
 
   defp handle_response({:done, ref}, %{ref: ref} = state) do
-    do_disconnect(state, :done)
+    # For WebSocket connections, {:done, ref} means the HTTP upgrade response is complete,
+    # NOT that the connection is closed. Only disconnect if the WebSocket wasn't established.
+    if state.websocket == nil do
+      Logger.warning("HTTP upgrade completed without establishing WebSocket")
+      do_disconnect(state, :upgrade_failed)
+    else
+      # WebSocket established - this is normal, just continue
+      Logger.debug("HTTP upgrade complete, WebSocket established")
+      state
+    end
   end
 
   defp handle_response({:error, ref, reason}, %{ref: ref} = state) do
@@ -504,25 +516,32 @@ defmodule ZcaEx.WS.Connection do
     end
   end
 
-  defp handle_cipher_key(%{"key" => key}, state) do
-    Logger.debug("Received cipher key")
-    Dispatcher.dispatch(state.account_id, :cipher_key, %{key: key})
+  defp handle_cipher_key(%{"key" => key_b64}, state) do
+    case Base.decode64(key_b64) do
+      {:ok, key} when byte_size(key) in [16, 24, 32] ->
+        Logger.debug("Received cipher key")
+        Dispatcher.dispatch_lifecycle(state.account_id, :ready, %{})
 
-    duration =
-      if state.connect_start_time do
-        System.monotonic_time() - state.connect_start_time
-      else
-        0
-      end
+        duration =
+          if state.connect_start_time do
+            System.monotonic_time() - state.connect_start_time
+          else
+            0
+          end
 
-    Telemetry.ws_connect_stop(state.account_id, duration, :ok)
+        Telemetry.ws_connect_stop(state.account_id, duration, :ok)
 
-    state
-    |> Map.put(:cipher_key, key)
-    |> Map.put(:state, :ready)
-    |> Map.put(:retry_policy, nil)
-    |> Map.put(:connect_start_time, nil)
-    |> schedule_ping()
+        state
+        |> Map.put(:cipher_key, key)
+        |> Map.put(:state, :ready)
+        |> Map.put(:retry_policy, nil)
+        |> Map.put(:connect_start_time, nil)
+        |> schedule_ping()
+
+      _ ->
+        Logger.warning("Invalid cipher key received")
+        do_disconnect(state, :invalid_cipher_key)
+    end
   end
 
   defp handle_cipher_key(_payload, state), do: state
@@ -575,37 +594,59 @@ defmodule ZcaEx.WS.Connection do
     decoded_data = if encrypt_type == 2, do: URI.decode(data), else: data
 
     with {:ok, encrypted} <- Base.decode64(decoded_data),
-         {:ok, decrypted} <- AesGcm.decrypt(cipher_key, encrypted),
+         {:ok, decrypted} <- AesGcm.decrypt_with_key(cipher_key, encrypted),
          {:ok, decompressed} <- maybe_decompress(decrypted, encrypt_type),
          {:ok, decoded} <- Jason.decode(decompressed) do
       Map.put(original_payload, "data", decoded)
     else
+      :error ->
+        Logger.warning("Failed to decrypt event data: invalid_base64_data")
+        original_payload
+
       {:error, reason} ->
         Logger.warning("Failed to decrypt event data: #{inspect(reason)}")
         original_payload
     end
   end
 
+  @max_event_json_bytes 5_000_000
+
   defp maybe_decompress(data, encrypt_type) when encrypt_type in [1, 2] do
     try do
-      decompressed = :zlib.unzip(data)
-      {:ok, decompressed}
-    rescue
-      _ ->
-        try do
-          z = :zlib.open()
-          :ok = :zlib.inflateInit(z, -15)
-          decompressed = :zlib.inflate(z, data) |> IO.iodata_to_binary()
-          :zlib.inflateEnd(z)
-          :zlib.close(z)
-          {:ok, decompressed}
-        rescue
-          e -> {:error, {:decompress_failed, e}}
-        end
+      decompressed = :zlib.gunzip(data)
+
+      if byte_size(decompressed) > @max_event_json_bytes do
+        {:error, :decompressed_too_large}
+      else
+        {:ok, decompressed}
+      end
+    catch
+      :error, _reason ->
+        try_inflate_fallback(data)
     end
   end
 
   defp maybe_decompress(data, _encrypt_type), do: {:ok, data}
+
+  defp try_inflate_fallback(data) do
+    z = :zlib.open()
+
+    try do
+      :ok = :zlib.inflateInit(z, 31)
+      decompressed = :zlib.inflate(z, data) |> IO.iodata_to_binary()
+      :zlib.inflateEnd(z)
+
+      if byte_size(decompressed) > @max_event_json_bytes do
+        {:error, :decompressed_too_large}
+      else
+        {:ok, decompressed}
+      end
+    catch
+      :error, reason -> {:error, {:decompress_failed, reason}}
+    after
+      :zlib.close(z)
+    end
+  end
 
   defp do_send_frame(state, frame) do
     case Mint.WebSocket.encode(state.websocket, {:binary, frame}) do

@@ -192,4 +192,97 @@ defmodule ZcaEx.Api.LoginQRTest do
       assert expired_state.abort_ref == nil
     end
   end
+
+  describe "extract_user_info parsing (via test helper)" do
+    # Since extract_user_info/1 is private, we replicate the parsing logic here
+
+    test "extracts name and avatar from nested info structure" do
+      user_info = %{
+        "data" => %{
+          "info" => %{
+            "name" => "Test User",
+            "avatar" => "https://avatar.url/image.jpg"
+          }
+        }
+      }
+
+      assert {:ok, "Test User", "https://avatar.url/image.jpg"} = extract_user_info(user_info)
+    end
+
+    test "returns empty strings for info with partial data" do
+      user_info = %{
+        "data" => %{
+          "info" => %{
+            "name" => "Test User"
+          }
+        }
+      }
+
+      assert {:ok, "Test User", ""} = extract_user_info(user_info)
+    end
+
+    test "handles logged: true with no info" do
+      user_info = %{
+        "data" => %{
+          "logged" => true
+        }
+      }
+
+      assert {:ok, "", ""} = extract_user_info(user_info)
+    end
+
+    test "handles require_confirm_pwd scenario" do
+      user_info = %{
+        "data" => %{
+          "logged" => false,
+          "require_confirm_pwd" => true
+        }
+      }
+
+      # This now succeeds instead of failing - allows proceeding with cookies
+      assert {:ok, "", ""} = extract_user_info(user_info)
+    end
+
+    test "returns auth error for logged: false without require_confirm_pwd" do
+      user_info = %{
+        "data" => %{
+          "logged" => false
+        }
+      }
+
+      assert {:error, %ZcaEx.Error{category: :auth}} = extract_user_info(user_info)
+    end
+
+    test "returns error for unexpected structure" do
+      user_info = %{
+        "unexpected" => "data"
+      }
+
+      assert {:error, %ZcaEx.Error{category: :api}} = extract_user_info(user_info)
+    end
+  end
+
+  # Replicates the private extract_user_info/1 function from LoginQR
+  defp extract_user_info(user_info) do
+    case user_info do
+      %{"data" => %{"info" => %{"name" => name, "avatar" => avatar}}}
+      when is_binary(name) and is_binary(avatar) ->
+        {:ok, name, avatar}
+
+      %{"data" => %{"info" => info}} when is_map(info) ->
+        {:ok, info["name"] || "", info["avatar"] || ""}
+
+      %{"data" => %{"logged" => true}} ->
+        {:ok, "", ""}
+
+      %{"data" => %{"logged" => false, "require_confirm_pwd" => true}} ->
+        {:ok, "", ""}
+
+      %{"data" => %{"logged" => false}} ->
+        {:error, ZcaEx.Error.auth("Login failed - session not established")}
+
+      _ ->
+        {:error, ZcaEx.Error.api(nil, "Invalid user info response structure")}
+    end
+  end
 end

@@ -136,10 +136,25 @@ defmodule ZcaEx.Account.Manager do
     case AccountClient.get(account_id, url, creds.user_agent) do
       {:ok, %{status: 200, body: body}} ->
         resp = Jason.decode!(body)
+        Logger.debug("getLoginInfo response: #{inspect(resp)}")
 
         if resp["error_code"] == 0 do
           decrypted = AesCbc.decrypt_utf8_key(enc_key, resp["data"], :base64)
-          {:ok, Jason.decode!(decrypted)}
+          Logger.debug("Decrypted login info: #{inspect(decrypted)}")
+          login_data = Jason.decode!(decrypted)
+          
+          # Check for inner error code (e.g., 102 = session expired)
+          case login_data do
+            %{"error_code" => 0, "data" => data} when is_map(data) ->
+              {:ok, data}
+            %{"error_code" => code, "error_message" => msg} when code != 0 ->
+              {:error, "Login failed (#{code}): #{msg}"}
+            # Direct data without wrapper (normal response)
+            %{"uid" => _} = data ->
+              {:ok, data}
+            _ ->
+              {:ok, login_data}
+          end
         else
           {:error, resp["error_message"] || "Login failed"}
         end
@@ -185,7 +200,12 @@ defmodule ZcaEx.Account.Manager do
 
   defp get_ws_endpoints(server_info) do
     case server_info["zpw_ws"] do
-      ws when is_list(ws) -> Enum.map(ws, fn e -> e["endpoint"] end)
+      # List of maps with "endpoint" key
+      [%{"endpoint" => _} | _] = ws -> Enum.map(ws, fn e -> e["endpoint"] end)
+      # List of strings (direct URLs)
+      [url | _] = ws when is_binary(url) -> ws
+      # Single string
+      url when is_binary(url) -> [url]
       _ -> ["wss://ws1.chat.zalo.me/ws/v2/webchat/socket"]
     end
   end

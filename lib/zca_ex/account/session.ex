@@ -45,4 +45,65 @@ defmodule ZcaEx.Account.Session do
       "phoneNumber" => get_in(data, ["phoneNumber"]) || get_in(data, [:phoneNumber])
     }
   end
+
+  @spec to_map(t(), keyword()) :: map()
+  def to_map(%__MODULE__{} = session, opts \\ []) do
+    include_sensitive? = Keyword.get(opts, :include_sensitive?, false)
+
+    base = %{
+      "uid" => session.uid,
+      "zpw_service_map" => session.zpw_service_map,
+      "ws_endpoints" => session.ws_endpoints,
+      "api_type" => session.api_type,
+      "api_version" => session.api_version,
+      "settings" => session.settings,
+      "login_info" => session.login_info,
+      "extra_ver" => session.extra_ver
+    }
+
+    if include_sensitive? do
+      Map.put(base, "secret_key", session.secret_key)
+    else
+      base
+    end
+  end
+
+  @spec from_map(map()) :: {:ok, t()} | {:error, term()}
+  def from_map(map) when is_map(map) do
+    with {:ok, uid} <- require_field(map, :uid),
+         {:ok, secret_key} <- require_field(map, :secret_key),
+         {:ok, zpw_service_map} <- require_field(map, :zpw_service_map) do
+      {:ok,
+       %__MODULE__{
+         uid: to_string(uid),
+         secret_key: secret_key,
+         zpw_service_map: zpw_service_map,
+         ws_endpoints: get_field(map, :ws_endpoints) || [],
+         api_type: get_field(map, :api_type) || 30,
+         api_version: get_field(map, :api_version) || 645,
+         settings: get_field(map, :settings),
+         login_info: get_field(map, :login_info),
+         extra_ver: get_field(map, :extra_ver)
+       }}
+    end
+  end
+
+  @spec from_map!(map()) :: t()
+  def from_map!(map) do
+    case from_map(map) do
+      {:ok, session} -> session
+      {:error, reason} -> raise ArgumentError, "Invalid session map: #{inspect(reason)}"
+    end
+  end
+
+  defp get_field(map, key) when is_atom(key) do
+    Map.get(map, key) || Map.get(map, to_string(key))
+  end
+
+  defp require_field(map, key) do
+    case get_field(map, key) do
+      nil -> {:error, {:missing_required, key}}
+      value -> {:ok, value}
+    end
+  end
 end

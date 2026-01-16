@@ -153,4 +153,169 @@ defmodule ZcaEx.Api.LoginTest do
       assert creds.cookies == cookies
     end
   end
+
+  describe "Credentials.to_map/2" do
+    test "excludes cookies and secret_key when include_sensitive?: false" do
+      {:ok, creds} =
+        Credentials.new(
+          imei: "test-imei",
+          user_agent: "Mozilla/5.0",
+          cookies: [%{"name" => "session", "value" => "abc"}],
+          secret_key: "super-secret"
+        )
+
+      map = Credentials.to_map(creds, include_sensitive?: false)
+
+      assert map["imei"] == "test-imei"
+      assert map["user_agent"] == "Mozilla/5.0"
+      assert map["language"] == "vi"
+      assert map["api_type"] == 30
+      assert map["api_version"] == 665
+      refute Map.has_key?(map, "cookies")
+      refute Map.has_key?(map, "secret_key")
+    end
+
+    test "includes all fields when include_sensitive?: true" do
+      cookies = [%{"name" => "session", "value" => "abc"}]
+
+      {:ok, creds} =
+        Credentials.new(
+          imei: "test-imei",
+          user_agent: "Mozilla/5.0",
+          cookies: cookies,
+          secret_key: "super-secret"
+        )
+
+      map = Credentials.to_map(creds, include_sensitive?: true)
+
+      assert map["imei"] == "test-imei"
+      assert map["user_agent"] == "Mozilla/5.0"
+      assert map["cookies"] == cookies
+      assert map["secret_key"] == "super-secret"
+    end
+
+    test "normalizes string cookies to list format" do
+      {:ok, creds} =
+        Credentials.new(
+          imei: "test-imei",
+          user_agent: "Mozilla/5.0",
+          cookies: "session=abc; token=xyz"
+        )
+
+      map = Credentials.to_map(creds, include_sensitive?: true)
+
+      assert is_list(map["cookies"])
+      assert Enum.any?(map["cookies"], &(&1["name"] == "session" && &1["value"] == "abc"))
+      assert Enum.any?(map["cookies"], &(&1["name"] == "token" && &1["value"] == "xyz"))
+    end
+
+    test "defaults to include_sensitive?: false" do
+      {:ok, creds} =
+        Credentials.new(
+          imei: "test-imei",
+          user_agent: "Mozilla/5.0",
+          cookies: [%{"name" => "session", "value" => "abc"}],
+          secret_key: "super-secret"
+        )
+
+      map = Credentials.to_map(creds)
+
+      refute Map.has_key?(map, "cookies")
+      refute Map.has_key?(map, "secret_key")
+    end
+  end
+
+  describe "Credentials.from_map/1" do
+    test "parses map with atom keys" do
+      map = %{
+        imei: "test-imei",
+        user_agent: "Mozilla/5.0",
+        cookies: [%{"name" => "session", "value" => "abc"}],
+        language: "en",
+        secret_key: "secret",
+        api_type: 31,
+        api_version: 700
+      }
+
+      assert {:ok, creds} = Credentials.from_map(map)
+      assert creds.imei == "test-imei"
+      assert creds.user_agent == "Mozilla/5.0"
+      assert creds.cookies == [%{"name" => "session", "value" => "abc"}]
+      assert creds.language == "en"
+      assert creds.secret_key == "secret"
+      assert creds.api_type == 31
+      assert creds.api_version == 700
+    end
+
+    test "parses map with string keys" do
+      map = %{
+        "imei" => "test-imei",
+        "user_agent" => "Mozilla/5.0",
+        "cookies" => [%{"name" => "session", "value" => "abc"}],
+        "language" => "en",
+        "secret_key" => "secret",
+        "api_type" => 31,
+        "api_version" => 700
+      }
+
+      assert {:ok, creds} = Credentials.from_map(map)
+      assert creds.imei == "test-imei"
+      assert creds.user_agent == "Mozilla/5.0"
+      assert creds.cookies == [%{"name" => "session", "value" => "abc"}]
+      assert creds.language == "en"
+      assert creds.secret_key == "secret"
+      assert creds.api_type == 31
+      assert creds.api_version == 700
+    end
+
+    test "uses defaults for optional fields" do
+      map = %{
+        "imei" => "test-imei",
+        "user_agent" => "Mozilla/5.0",
+        "cookies" => []
+      }
+
+      assert {:ok, creds} = Credentials.from_map(map)
+      assert creds.language == "vi"
+      assert creds.api_type == 30
+      assert creds.api_version == 665
+      assert creds.secret_key == nil
+    end
+
+    test "returns error for missing imei" do
+      map = %{"user_agent" => "Mozilla/5.0", "cookies" => []}
+      assert {:error, {:missing_required, :imei}} = Credentials.from_map(map)
+    end
+
+    test "returns error for missing user_agent" do
+      map = %{"imei" => "test-imei", "cookies" => []}
+      assert {:error, {:missing_required, :user_agent}} = Credentials.from_map(map)
+    end
+
+    test "returns error for missing cookies" do
+      map = %{"imei" => "test-imei", "user_agent" => "Mozilla/5.0"}
+      assert {:error, {:missing_required, :cookies}} = Credentials.from_map(map)
+    end
+  end
+
+  describe "Credentials.from_map!/1" do
+    test "returns credentials for valid map" do
+      map = %{
+        "imei" => "test-imei",
+        "user_agent" => "Mozilla/5.0",
+        "cookies" => []
+      }
+
+      creds = Credentials.from_map!(map)
+      assert creds.imei == "test-imei"
+    end
+
+    test "raises ArgumentError for invalid map" do
+      map = %{"imei" => "test-imei"}
+
+      assert_raise ArgumentError, ~r/Invalid credentials map/, fn ->
+        Credentials.from_map!(map)
+      end
+    end
+  end
 end

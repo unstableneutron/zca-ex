@@ -37,6 +37,21 @@ defmodule ZcaEx.Crypto.AesGcm do
 
   def decrypt(_cipher_key, _encrypted_data), do: {:error, :invalid_arguments}
 
+  @doc """
+  Decrypt with a pre-decoded binary key.
+  """
+  @spec decrypt_with_key(key :: binary(), encrypted_data :: binary()) ::
+          {:ok, binary()} | {:error, term()}
+  def decrypt_with_key(key, encrypted_data)
+      when is_binary(key) and byte_size(key) in [16, 24, 32] and is_binary(encrypted_data) do
+    with :ok <- validate_data_length(encrypted_data),
+         {:ok, plaintext} <- do_decrypt(key, encrypted_data) do
+      {:ok, plaintext}
+    end
+  end
+
+  def decrypt_with_key(_key, _encrypted_data), do: {:error, :invalid_arguments}
+
   defp decode_key(base64_key) do
     case Base.decode64(base64_key) do
       {:ok, key} when byte_size(key) in [16, 24, 32] -> {:ok, key}

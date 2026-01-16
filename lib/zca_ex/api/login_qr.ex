@@ -305,7 +305,21 @@ defmodule ZcaEx.Api.LoginQR do
       %{"data" => %{"info" => info}} when is_map(info) ->
         {:ok, info["name"] || "", info["avatar"] || ""}
 
+      # Handle case where data has logged/session_chat_valid but no info
+      %{"data" => %{"logged" => true}} ->
+        {:ok, "", ""}
+
+      # Account requires password confirmation - but we still have session cookies
+      # Try to proceed anyway and let the caller decide
+      %{"data" => %{"logged" => false, "require_confirm_pwd" => true}} ->
+        Logger.warning("userinfo returned require_confirm_pwd=true, attempting to proceed anyway")
+        {:ok, "", ""}
+
+      %{"data" => %{"logged" => false}} ->
+        {:error, Error.auth("Login failed - session not established")}
+
       _ ->
+        Logger.warning("Unexpected user info structure: #{inspect(user_info)}")
         {:error, Error.api(nil, "Invalid user info response structure")}
     end
   end
@@ -457,11 +471,32 @@ defmodule ZcaEx.Api.LoginQR do
 
   defp check_session(state) do
     url = "https://id.zalo.me/account/checksession?continue=https%3A%2F%2Fchat.zalo.me%2Findex.html"
-    headers = browser_headers(state.user_agent, :document) |> with_cookies(state)
+    follow_redirects_with_cookies(state, url, 10)
+  end
 
-    case Client.get(url, headers) do
-      {:ok, %{status: status, headers: resp_headers}} when status in [200, 302, 303] ->
-        store_cookies(state, url, resp_headers)
+  defp follow_redirects_with_cookies(_state, _url, 0) do
+    {:error, Error.api(nil, "Too many redirects")}
+  end
+
+  defp follow_redirects_with_cookies(state, url, remaining) do
+    headers = browser_headers(state.user_agent, :document) |> with_cookies(state, url)
+
+    # Use Req directly with redirect: false to handle manually
+    case Req.get(url, headers: headers, redirect: false, decode_body: false) do
+      {:ok, %{status: status, headers: resp_headers}} when status in [301, 302, 303, 307, 308] ->
+        store_cookies_from_req_headers(state, url, resp_headers)
+        
+        case get_location_header(resp_headers) do
+          nil ->
+            {:error, Error.api(nil, "Redirect without Location header")}
+          location ->
+            next_url = URI.merge(url, location) |> to_string()
+            Logger.debug("redirecting to #{next_url}")
+            follow_redirects_with_cookies(state, next_url, remaining - 1)
+        end
+
+      {:ok, %{status: 200, headers: resp_headers}} ->
+        store_cookies_from_req_headers(state, url, resp_headers)
         {:ok, :session_checked}
 
       {:ok, %{status: status}} ->
@@ -472,8 +507,31 @@ defmodule ZcaEx.Api.LoginQR do
     end
   end
 
+  defp store_cookies_from_req_headers(state, url, headers) do
+    uri = URI.parse(url)
+
+    headers
+    |> Map.get("set-cookie", [])
+    |> List.wrap()
+    |> Enum.each(fn value ->
+      CookieJar.store(state.cookie_jar_id, uri, value)
+    end)
+  end
+
+  defp get_location_header(headers) do
+    case Map.get(headers, "location") do
+      [loc | _] -> loc
+      loc when is_binary(loc) -> loc
+      _ -> nil
+    end
+  end
+
   defp get_user_info(state) do
     url = "https://jr.chat.zalo.me/jr/userinfo"
+
+    # Debug: log all cookies we have
+    all_cookies = CookieJar.export(state.cookie_jar_id)
+    Logger.debug("All cookies in jar: #{inspect(all_cookies)}")
 
     headers =
       [
@@ -489,6 +547,8 @@ defmodule ZcaEx.Api.LoginQR do
         {"user-agent", state.user_agent}
       ]
       |> with_cookies(state, "https://jr.chat.zalo.me/jr/userinfo")
+
+    Logger.debug("Headers for userinfo: #{inspect(headers)}")
 
     case Client.get(url, headers) do
       {:ok, %{status: 200, body: body}} ->

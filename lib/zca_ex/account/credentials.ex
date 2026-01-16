@@ -72,4 +72,79 @@ defmodule ZcaEx.Account.Credentials do
 
   defp normalize_cookies(%{"cookies" => cookies}) when is_list(cookies), do: cookies
   defp normalize_cookies(cookies), do: cookies
+
+  @spec to_map(t(), keyword()) :: map()
+  def to_map(%__MODULE__{} = credentials, opts \\ []) do
+    include_sensitive? = Keyword.get(opts, :include_sensitive?, false)
+    normalized_cookies = normalize_cookies_to_list(credentials.cookies)
+
+    base = %{
+      "imei" => credentials.imei,
+      "user_agent" => credentials.user_agent,
+      "language" => credentials.language,
+      "api_type" => credentials.api_type,
+      "api_version" => credentials.api_version
+    }
+
+    if include_sensitive? do
+      base
+      |> Map.put("cookies", normalized_cookies)
+      |> Map.put("secret_key", credentials.secret_key)
+    else
+      base
+    end
+  end
+
+  defp normalize_cookies_to_list(cookies) when is_list(cookies), do: cookies
+  defp normalize_cookies_to_list(%{"cookies" => cookies}) when is_list(cookies), do: cookies
+  defp normalize_cookies_to_list(cookie_string) when is_binary(cookie_string) do
+    cookie_string
+    |> String.split(";")
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.map(fn cookie_part ->
+      case String.split(cookie_part, "=", parts: 2) do
+        [name, value] -> %{"name" => String.trim(name), "value" => String.trim(value)}
+        [name] -> %{"name" => String.trim(name), "value" => ""}
+      end
+    end)
+  end
+  defp normalize_cookies_to_list(cookies) when is_map(cookies), do: [cookies]
+
+  @spec from_map(map()) :: {:ok, t()} | {:error, term()}
+  def from_map(map) when is_map(map) do
+    with {:ok, imei} <- require_field(map, :imei),
+         {:ok, user_agent} <- require_field(map, :user_agent),
+         {:ok, cookies} <- require_field(map, :cookies) do
+      {:ok,
+       %__MODULE__{
+         imei: imei,
+         user_agent: user_agent,
+         cookies: normalize_cookies(cookies),
+         language: get_field(map, :language) || "vi",
+         secret_key: get_field(map, :secret_key),
+         api_type: get_field(map, :api_type) || 30,
+         api_version: get_field(map, :api_version) || 665
+       }}
+    end
+  end
+
+  @spec from_map!(map()) :: t()
+  def from_map!(map) do
+    case from_map(map) do
+      {:ok, credentials} -> credentials
+      {:error, reason} -> raise ArgumentError, "Invalid credentials map: #{inspect(reason)}"
+    end
+  end
+
+  defp get_field(map, key) when is_atom(key) do
+    Map.get(map, key) || Map.get(map, to_string(key))
+  end
+
+  defp require_field(map, key) do
+    case get_field(map, key) do
+      nil -> {:error, {:missing_required, key}}
+      value -> {:ok, value}
+    end
+  end
 end
