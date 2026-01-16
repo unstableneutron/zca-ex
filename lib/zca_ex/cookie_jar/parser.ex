@@ -1,7 +1,7 @@
 defmodule ZcaEx.CookieJar.Parser do
-  @moduledoc "Parser for Set-Cookie headers"
+  @moduledoc "Parser for Set-Cookie headers with RFC6265 compliance"
 
-  alias ZcaEx.CookieJar.Cookie
+  alias ZcaEx.CookieJar.{Cookie, Policy}
 
   @doc """
   Parse a Set-Cookie header into a Cookie struct.
@@ -51,6 +51,9 @@ defmodule ZcaEx.CookieJar.Parser do
             [key, value] ->
               parse_attribute(String.downcase(String.trim(key)), String.trim(value), acc)
 
+            [key] ->
+              parse_flag_attribute(String.downcase(String.trim(key)), acc)
+
             _ ->
               acc
           end
@@ -58,8 +61,12 @@ defmodule ZcaEx.CookieJar.Parser do
     end)
   end
 
+  defp parse_flag_attribute("secure", acc), do: Map.put(acc, :secure, true)
+  defp parse_flag_attribute("httponly", acc), do: Map.put(acc, :http_only, true)
+  defp parse_flag_attribute(_, acc), do: acc
+
   defp parse_attribute("domain", value, acc) do
-    domain = value |> String.trim_leading(".") |> String.downcase()
+    domain = Policy.normalize_domain(value)
     Map.put(acc, :domain, domain)
   end
 
@@ -68,24 +75,48 @@ defmodule ZcaEx.CookieJar.Parser do
   end
 
   defp parse_attribute("expires", value, acc) do
-    case parse_expires(value) do
-      {:ok, timestamp} ->
-        Map.put_new(acc, :expires_at, timestamp)
+    if Map.has_key?(acc, :max_age) do
+      acc
+    else
+      case parse_expires(value) do
+        {:ok, timestamp} ->
+          Map.put(acc, :expires_at, timestamp)
 
-      :error ->
-        acc
+        :error ->
+          acc
+      end
     end
   end
 
   defp parse_attribute("max-age", value, acc) do
     case Integer.parse(value) do
       {seconds, ""} ->
-        expires_at = System.system_time(:second) + seconds
-        Map.put(acc, :expires_at, expires_at)
+        expires_at =
+          if seconds <= 0 do
+            0
+          else
+            System.system_time(:second) + seconds
+          end
+
+        acc
+        |> Map.put(:max_age, seconds)
+        |> Map.put(:expires_at, expires_at)
 
       _ ->
         acc
     end
+  end
+
+  defp parse_attribute("samesite", value, acc) do
+    same_site =
+      case String.downcase(value) do
+        "strict" -> :strict
+        "lax" -> :lax
+        "none" -> :none
+        _ -> nil
+      end
+
+    Map.put(acc, :same_site, same_site)
   end
 
   defp parse_attribute(_key, _value, acc), do: acc
@@ -150,7 +181,7 @@ defmodule ZcaEx.CookieJar.Parser do
 
   defp build_cookie(name, value, attrs, uri) do
     now = System.system_time(:second)
-    request_host = String.downcase(uri.host || "")
+    request_host = Policy.normalize_domain(uri.host || "")
 
     {domain, host_only} =
       case Map.get(attrs, :domain) do
@@ -158,7 +189,7 @@ defmodule ZcaEx.CookieJar.Parser do
           {request_host, true}
 
         domain ->
-          if domain_matches?(request_host, domain) do
+          if Policy.valid_domain_for_request?(request_host, domain) do
             {domain, false}
           else
             {request_host, true}
@@ -167,7 +198,8 @@ defmodule ZcaEx.CookieJar.Parser do
 
     path =
       case Map.get(attrs, :path) do
-        nil -> default_path(uri.path)
+        nil -> Policy.default_path(uri.path)
+        "" -> Policy.default_path(uri.path)
         path -> path
       end
 
@@ -180,24 +212,11 @@ defmodule ZcaEx.CookieJar.Parser do
       http_only: Map.get(attrs, :http_only, false),
       host_only: host_only,
       expires_at: Map.get(attrs, :expires_at),
-      creation_time: now
+      creation_time: now,
+      same_site: Map.get(attrs, :same_site),
+      max_age: Map.get(attrs, :max_age)
     }
 
     {:ok, cookie}
-  end
-
-  defp domain_matches?(request_host, cookie_domain) do
-    request_host == cookie_domain or
-      String.ends_with?(request_host, "." <> cookie_domain)
-  end
-
-  defp default_path(nil), do: "/"
-  defp default_path(""), do: "/"
-
-  defp default_path(path) do
-    case String.split(path, "/") |> Enum.drop(-1) |> Enum.join("/") do
-      "" -> "/"
-      p -> p
-    end
   end
 end

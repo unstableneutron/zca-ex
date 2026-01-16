@@ -4,6 +4,7 @@ defmodule ZcaEx.WS.Connection do
 
   Manages the WebSocket connection lifecycle using mint_web_socket.
   States: :disconnected -> :connecting -> :connected -> :ready
+          :backing_off (waiting to reconnect)
   """
   use GenServer
   require Logger
@@ -11,8 +12,10 @@ defmodule ZcaEx.WS.Connection do
   alias ZcaEx.Account.Session
   alias ZcaEx.CookieJar
   alias ZcaEx.Crypto.AesGcm
+  alias ZcaEx.Error
   alias ZcaEx.Events.Dispatcher
-  alias ZcaEx.WS.{ControlParser, Frame, Router}
+  alias ZcaEx.Telemetry
+  alias ZcaEx.WS.{ControlParser, Frame, RetryPolicy, Router}
 
   @ping_interval_ms 30_000
   @default_user_agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -27,10 +30,14 @@ defmodule ZcaEx.WS.Connection do
     :ping_timer,
     :user_agent,
     :upgrade_status,
+    :retry_policy,
+    :reconnect_reason,
+    :connect_start_time,
     endpoint_index: 0,
     retry_counters: %{},
     state: :disconnected,
-    request_id: 0
+    request_id: 0,
+    reconnect_enabled: true
   ]
 
   @type t :: %__MODULE__{
@@ -45,8 +52,12 @@ defmodule ZcaEx.WS.Connection do
           upgrade_status: non_neg_integer() | nil,
           endpoint_index: non_neg_integer(),
           retry_counters: map(),
-          state: :disconnected | :connecting | :connected | :ready,
-          request_id: non_neg_integer()
+          state: :disconnected | :connecting | :connected | :ready | :backing_off,
+          request_id: non_neg_integer(),
+          retry_policy: RetryPolicy.t() | nil,
+          reconnect_enabled: boolean(),
+          reconnect_reason: term() | nil,
+          connect_start_time: integer() | nil
         }
 
   ## Public API
@@ -68,6 +79,12 @@ defmodule ZcaEx.WS.Connection do
   @spec disconnect(String.t()) :: :ok
   def disconnect(account_id) do
     GenServer.call(via(account_id), :disconnect)
+  end
+
+  @doc "Explicitly disconnect without reconnection"
+  @spec explicit_disconnect(String.t()) :: :ok
+  def explicit_disconnect(account_id) do
+    GenServer.call(via(account_id), :explicit_disconnect)
   end
 
   @doc "Send a raw binary frame"
@@ -110,7 +127,15 @@ defmodule ZcaEx.WS.Connection do
   @impl true
   def handle_call({:connect, session, opts}, _from, %{state: :disconnected} = state) do
     user_agent = Keyword.get(opts, :user_agent, state.user_agent)
-    state = %{state | session: session, user_agent: user_agent, state: :connecting}
+    reconnect_enabled = Keyword.get(opts, :reconnect, true)
+
+    state = %{
+      state
+      | session: session,
+        user_agent: user_agent,
+        state: :connecting,
+        reconnect_enabled: reconnect_enabled
+    }
 
     case do_connect(state) do
       {:ok, new_state} ->
@@ -126,13 +151,20 @@ defmodule ZcaEx.WS.Connection do
   end
 
   def handle_call(:disconnect, _from, state) do
-    new_state = do_disconnect(state)
+    new_state = do_disconnect(state, :normal)
+    {:reply, :ok, new_state}
+  end
+
+  def handle_call(:explicit_disconnect, _from, state) do
+    new_state = %{state | reconnect_enabled: false}
+    new_state = do_disconnect(new_state, :explicit)
     {:reply, :ok, new_state}
   end
 
   def handle_call({:send_frame, frame}, _from, %{state: :ready} = state) do
     case do_send_frame(state, frame) do
       {:ok, new_state} ->
+        Telemetry.ws_message_sent(state.account_id, byte_size(frame))
         {:reply, :ok, new_state}
 
       {:error, reason, new_state} ->
@@ -161,6 +193,21 @@ defmodule ZcaEx.WS.Connection do
     {:noreply, state}
   end
 
+  def handle_info(:reconnect, %{state: :backing_off} = state) do
+    case do_connect(state) do
+      {:ok, new_state} ->
+        {:noreply, new_state}
+
+      {:error, reason} ->
+        error = Error.normalize(reason)
+        handle_reconnect_failure(error, state)
+    end
+  end
+
+  def handle_info(:reconnect, state) do
+    {:noreply, state}
+  end
+
   def handle_info(message, %{conn: conn} = state) when conn != nil do
     case Mint.WebSocket.stream(conn, message) do
       {:ok, conn, responses} ->
@@ -170,7 +217,7 @@ defmodule ZcaEx.WS.Connection do
       {:error, conn, reason, _responses} ->
         Logger.warning("WebSocket stream error: #{inspect(reason)}")
         new_state = %{state | conn: conn}
-        {:noreply, do_disconnect(new_state)}
+        {:noreply, do_disconnect(new_state, :stream_error)}
 
       :unknown ->
         {:noreply, state}
@@ -183,7 +230,7 @@ defmodule ZcaEx.WS.Connection do
 
   @impl true
   def terminate(_reason, state) do
-    do_disconnect(state)
+    do_disconnect(state, :terminate)
     :ok
   end
 
@@ -192,10 +239,20 @@ defmodule ZcaEx.WS.Connection do
   defp via(account_id), do: {:via, Registry, {ZcaEx.Registry, {:ws, account_id}}}
 
   defp do_connect(state) do
-    %{session: session, endpoint_index: idx, account_id: account_id, user_agent: user_agent} =
-      state
+    %{session: session, account_id: account_id, user_agent: user_agent} = state
+
+    idx =
+      if state.retry_policy do
+        state.retry_policy.endpoint_index
+      else
+        state.endpoint_index
+      end
 
     endpoint = Enum.at(session.ws_endpoints, idx) || hd(session.ws_endpoints)
+
+    start_time = System.monotonic_time()
+    Telemetry.ws_connect_start(account_id, endpoint)
+
     uri = build_ws_uri(endpoint, session)
 
     cookies = CookieJar.get_cookie_string(account_id, "https://chat.zalo.me")
@@ -214,7 +271,7 @@ defmodule ZcaEx.WS.Connection do
 
     with {:ok, conn} <- Mint.HTTP.connect(scheme, uri.host, port, protocols: [:http1]),
          {:ok, conn, ref} <- Mint.WebSocket.upgrade(scheme, conn, ws_path(uri), headers) do
-      {:ok, %{state | conn: conn, ref: ref, state: :connecting}}
+      {:ok, %{state | conn: conn, ref: ref, state: :connecting, connect_start_time: start_time}}
     end
   end
 
@@ -251,24 +308,80 @@ defmodule ZcaEx.WS.Connection do
     end
   end
 
-  defp do_disconnect(state) do
+  defp do_disconnect(state, reason) do
     if state.ping_timer, do: Process.cancel_timer(state.ping_timer)
 
     if state.conn do
       _ = Mint.HTTP.close(state.conn)
     end
 
+    Telemetry.ws_disconnect(state.account_id, disconnect_reason_atom(reason))
     Dispatcher.dispatch_lifecycle(state.account_id, :disconnected, %{})
 
-    %{
+    base_state = %{
       state
       | conn: nil,
         websocket: nil,
         ref: nil,
         cipher_key: nil,
         ping_timer: nil,
-        state: :disconnected
+        reconnect_reason: reason
     }
+
+    maybe_schedule_reconnect(base_state, reason)
+  end
+
+  defp disconnect_reason_atom(reason) when is_atom(reason), do: reason
+  defp disconnect_reason_atom(_), do: :unknown
+
+  defp maybe_schedule_reconnect(state, reason) do
+    should_reconnect =
+      state.reconnect_enabled and
+        reason not in [:explicit, :normal, :duplicate] and
+        state.session != nil
+
+    if should_reconnect do
+      schedule_reconnect(state)
+    else
+      %{state | state: :disconnected, retry_policy: nil}
+    end
+  end
+
+  defp schedule_reconnect(state) do
+    total_endpoints = length(state.session.ws_endpoints)
+
+    policy =
+      state.retry_policy ||
+        RetryPolicy.new(total_endpoints)
+
+    case RetryPolicy.next_delay(policy) do
+      {:retry, delay, new_policy} ->
+        Telemetry.ws_reconnect(
+          state.account_id,
+          new_policy.current_attempt,
+          new_policy.endpoint_index,
+          delay
+        )
+
+        Process.send_after(self(), :reconnect, delay)
+
+        %{state | state: :backing_off, retry_policy: new_policy}
+
+      {:halt, halt_reason} ->
+        Logger.warning("Reconnection halted: #{halt_reason}")
+        Telemetry.error(state.account_id, :websocket, halt_reason)
+        %{state | state: :disconnected, retry_policy: nil}
+    end
+  end
+
+  defp handle_reconnect_failure(error, state) do
+    if Error.retryable?(error) do
+      {:noreply, schedule_reconnect(state)}
+    else
+      Logger.warning("Non-retryable error during reconnect: #{inspect(error)}")
+      Telemetry.error(state.account_id, :websocket, :non_retryable)
+      {:noreply, %{state | state: :disconnected, retry_policy: nil}}
+    end
   end
 
   defp handle_responses(responses, state) do
@@ -310,13 +423,13 @@ defmodule ZcaEx.WS.Connection do
   end
 
   defp handle_response({:done, ref}, %{ref: ref} = state) do
-    do_disconnect(state)
+    do_disconnect(state, :done)
   end
 
   defp handle_response({:error, ref, reason}, %{ref: ref} = state) do
     Logger.error("WebSocket error: #{inspect(reason)}")
     Dispatcher.dispatch_lifecycle(state.account_id, :error, %{reason: reason})
-    do_disconnect(state)
+    do_disconnect(state, :error)
   end
 
   defp handle_response(_response, state), do: state
@@ -331,6 +444,8 @@ defmodule ZcaEx.WS.Connection do
   end
 
   defp handle_ws_frame({:binary, data}, state) do
+    Telemetry.ws_message_received(state.account_id, byte_size(data), :binary)
+
     case Frame.decode(data) do
       {:ok, header, payload} ->
         handle_decoded_frame(header, payload, state)
@@ -344,7 +459,7 @@ defmodule ZcaEx.WS.Connection do
   defp handle_ws_frame({:close, code, reason}, state) do
     Logger.info("WebSocket closed: code=#{code}, reason=#{reason}")
     Dispatcher.dispatch_lifecycle(state.account_id, :closed, %{code: code, reason: reason})
-    do_disconnect(state)
+    do_disconnect(state, :closed)
   end
 
   defp handle_ws_frame({:ping, data}, state) do
@@ -378,7 +493,7 @@ defmodule ZcaEx.WS.Connection do
 
       :duplicate ->
         Logger.warning("Duplicate connection detected, disconnecting")
-        do_disconnect(state)
+        do_disconnect(state, :duplicate)
 
       :unknown ->
         Logger.debug("Unknown event: #{inspect(header)}")
@@ -393,16 +508,26 @@ defmodule ZcaEx.WS.Connection do
     Logger.debug("Received cipher key")
     Dispatcher.dispatch(state.account_id, :cipher_key, %{key: key})
 
+    duration =
+      if state.connect_start_time do
+        System.monotonic_time() - state.connect_start_time
+      else
+        0
+      end
+
+    Telemetry.ws_connect_stop(state.account_id, duration, :ok)
+
     state
     |> Map.put(:cipher_key, key)
     |> Map.put(:state, :ready)
+    |> Map.put(:retry_policy, nil)
+    |> Map.put(:connect_start_time, nil)
     |> schedule_ping()
   end
 
   defp handle_cipher_key(_payload, state), do: state
 
   defp dispatch_event(:control, _thread_type, payload, state) do
-    # Control events are not encrypted, parse and dispatch each sub-event
     payload
     |> ControlParser.parse()
     |> Enum.each(fn {event_type, event_payload} ->

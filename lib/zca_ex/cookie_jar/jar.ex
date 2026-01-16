@@ -1,9 +1,9 @@
 defmodule ZcaEx.CookieJar.Jar do
-  @moduledoc "GenServer for cookie storage using ETS"
+  @moduledoc "GenServer for cookie storage using ETS with RFC6265 compliance"
 
   use GenServer
 
-  alias ZcaEx.CookieJar.{Cookie, Parser}
+  alias ZcaEx.CookieJar.{Cookie, Parser, Policy}
 
   @type account_id :: term()
 
@@ -66,7 +66,13 @@ defmodule ZcaEx.CookieJar.Jar do
       case Parser.parse(header, uri) do
         {:ok, cookie} ->
           key = {cookie.domain, cookie.path, cookie.name}
-          :ets.insert(state.table, {key, cookie})
+
+          if cookie.expires_at == 0 do
+            :ets.delete(state.table, key)
+          else
+            :ets.insert(state.table, {key, cookie})
+          end
+
           :ok
 
         {:error, reason} ->
@@ -89,9 +95,13 @@ defmodule ZcaEx.CookieJar.Jar do
   end
 
   def handle_call(:export, _from, state) do
+    now = System.system_time(:second)
+
     cookies =
       :ets.tab2list(state.table)
-      |> Enum.map(fn {_key, cookie} -> cookie_to_map(cookie) end)
+      |> Enum.map(fn {_key, cookie} -> cookie end)
+      |> Enum.reject(&expired?(&1, now))
+      |> Enum.map(&cookie_to_map/1)
 
     {:reply, cookies, state}
   end
@@ -114,7 +124,7 @@ defmodule ZcaEx.CookieJar.Jar do
 
   defp get_matching_cookies(table, uri) do
     now = System.system_time(:second)
-    host = String.downcase(uri.host || "")
+    host = Policy.normalize_domain(uri.host || "")
     path = uri.path || "/"
     secure = uri.scheme == "https"
 
@@ -122,29 +132,15 @@ defmodule ZcaEx.CookieJar.Jar do
     |> Enum.map(fn {_key, cookie} -> cookie end)
     |> Enum.filter(fn cookie ->
       not expired?(cookie, now) and
-        domain_matches?(host, cookie) and
-        path_matches?(path, cookie.path) and
+        Policy.domain_matches?(host, cookie) and
+        Policy.path_matches?(path, cookie.path) and
         (not cookie.secure or secure)
     end)
   end
 
   defp expired?(%Cookie{expires_at: nil}, _now), do: false
+  defp expired?(%Cookie{expires_at: 0}, _now), do: true
   defp expired?(%Cookie{expires_at: expires_at}, now), do: expires_at <= now
-
-  defp domain_matches?(request_host, %Cookie{host_only: true, domain: domain}) do
-    request_host == domain
-  end
-
-  defp domain_matches?(request_host, %Cookie{domain: domain}) do
-    request_host == domain or String.ends_with?(request_host, "." <> domain)
-  end
-
-  defp path_matches?(request_path, cookie_path) do
-    request_path == cookie_path or
-      (String.starts_with?(request_path, cookie_path) and
-         (String.ends_with?(cookie_path, "/") or
-            String.at(request_path, String.length(cookie_path)) == "/"))
-  end
 
   defp cookie_to_map(%Cookie{} = cookie) do
     %{
@@ -156,7 +152,9 @@ defmodule ZcaEx.CookieJar.Jar do
       "httpOnly" => cookie.http_only,
       "hostOnly" => cookie.host_only,
       "expiresAt" => cookie.expires_at,
-      "creationTime" => cookie.creation_time
+      "creationTime" => cookie.creation_time,
+      "sameSite" => cookie.same_site,
+      "maxAge" => cookie.max_age
     }
   end
 
@@ -170,7 +168,9 @@ defmodule ZcaEx.CookieJar.Jar do
       http_only: get_bool(map, ["httpOnly", "http_only"]),
       host_only: get_bool(map, ["hostOnly", "host_only"]),
       expires_at: get_int(map, ["expiresAt", "expires_at"]),
-      creation_time: get_int(map, ["creationTime", "creation_time"]) || System.system_time(:second)
+      creation_time: get_int(map, ["creationTime", "creation_time"]) || System.system_time(:second),
+      same_site: get_same_site(map, ["sameSite", "same_site"]),
+      max_age: get_int(map, ["maxAge", "max_age"])
     }
   end
 
@@ -195,6 +195,19 @@ defmodule ZcaEx.CookieJar.Jar do
         nil -> nil
         val when is_integer(val) -> val
         val when is_binary(val) -> String.to_integer(val)
+        _ -> nil
+      end
+    end)
+  end
+
+  defp get_same_site(map, keys) do
+    Enum.find_value(keys, fn key ->
+      case Map.get(map, key) || Map.get(map, String.to_atom(key)) do
+        nil -> nil
+        val when is_atom(val) -> val
+        "strict" -> :strict
+        "lax" -> :lax
+        "none" -> :none
         _ -> nil
       end
     end)

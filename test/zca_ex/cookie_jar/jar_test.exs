@@ -195,4 +195,85 @@ defmodule ZcaEx.CookieJar.JarTest do
       assert result == "preloaded=yes"
     end
   end
+
+  describe "RFC6265 compliance" do
+    test "Max-Age takes precedence over Expires", %{account_id: account_id} do
+      uri = URI.parse("https://example.com/")
+      :ok = CookieJar.store(account_id, uri, "test=value; Max-Age=3600; Expires=Thu, 01 Jan 1970 00:00:00 GMT")
+
+      assert CookieJar.get_cookie_string(account_id, uri) == "test=value"
+    end
+
+    test "Max-Age=0 deletes cookie", %{account_id: account_id} do
+      uri = URI.parse("https://example.com/")
+      :ok = CookieJar.store(account_id, uri, "tobedeleted=yes")
+      assert CookieJar.get_cookie_string(account_id, uri) == "tobedeleted=yes"
+
+      :ok = CookieJar.store(account_id, uri, "tobedeleted=; Max-Age=0")
+      assert CookieJar.get_cookie_string(account_id, uri) == ""
+    end
+
+    test "parses SameSite attribute", %{account_id: account_id} do
+      uri = URI.parse("https://example.com/")
+      :ok = CookieJar.store(account_id, uri, "strict=val; SameSite=Strict")
+      :ok = CookieJar.store(account_id, uri, "lax=val; SameSite=Lax")
+      :ok = CookieJar.store(account_id, uri, "none=val; SameSite=None")
+
+      exported = CookieJar.export(account_id)
+      strict_cookie = Enum.find(exported, &(&1["name"] == "strict"))
+      lax_cookie = Enum.find(exported, &(&1["name"] == "lax"))
+      none_cookie = Enum.find(exported, &(&1["name"] == "none"))
+
+      assert strict_cookie["sameSite"] == :strict
+      assert lax_cookie["sameSite"] == :lax
+      assert none_cookie["sameSite"] == :none
+    end
+
+    test "no Domain attribute makes cookie host-only", %{account_id: account_id} do
+      uri = URI.parse("https://example.com/")
+      :ok = CookieJar.store(account_id, uri, "hostonly=yes")
+
+      assert CookieJar.get_cookie_string(account_id, "https://example.com/") == "hostonly=yes"
+      assert CookieJar.get_cookie_string(account_id, "https://sub.example.com/") == ""
+    end
+
+    test "uses default path when no Path attribute", %{account_id: account_id} do
+      uri = URI.parse("https://example.com/api/v1/endpoint")
+      :ok = CookieJar.store(account_id, uri, "test=value")
+
+      assert CookieJar.get_cookie_string(account_id, "https://example.com/api/v1/other") == "test=value"
+      assert CookieJar.get_cookie_string(account_id, "https://example.com/api/other") == ""
+    end
+
+    test "export excludes expired cookies", %{account_id: account_id} do
+      uri = URI.parse("https://example.com/")
+      :ok = CookieJar.store(account_id, uri, "valid=yes; Max-Age=3600")
+      :ok = CookieJar.store(account_id, uri, "expired=yes; Max-Age=0")
+
+      exported = CookieJar.export(account_id)
+      names = Enum.map(exported, & &1["name"])
+
+      assert "valid" in names
+      refute "expired" in names
+    end
+
+    test "import with SameSite attribute", %{account_id: account_id} do
+      cookies = [
+        %{
+          "name" => "test",
+          "value" => "value",
+          "domain" => "example.com",
+          "path" => "/",
+          "sameSite" => :strict,
+          "hostOnly" => true
+        }
+      ]
+
+      :ok = CookieJar.import(account_id, cookies)
+
+      exported = CookieJar.export(account_id)
+      cookie = Enum.find(exported, &(&1["name"] == "test"))
+      assert cookie["sameSite"] == :strict
+    end
+  end
 end
