@@ -5,9 +5,12 @@ defmodule ZcaEx.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      # Process group based pub/sub for events
+      {ZcaEx.Events, []},
+
       # Process registry for uniqueness enforcement
       {Registry, keys: :unique, name: ZcaEx.Registry},
-      
+
       # Dynamic supervisor for per-account supervision trees
       {DynamicSupervisor, name: ZcaEx.AccountSupervisor, strategy: :one_for_one}
     ]
