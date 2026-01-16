@@ -63,7 +63,7 @@ defmodule ZcaEx.Api.Endpoints.BlockViewFeedTest do
 
       assert {:error, error} = BlockViewFeed.build_base_url(session)
       assert error.message == "friend service URL not found"
-      assert error.code == :invalid_input
+      assert error.code == :service_not_found
     end
   end
 
