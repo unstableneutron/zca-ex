@@ -90,3 +90,40 @@ Tests (test/zca_ex/api/endpoints/):
 - **SetHiddenConversations uses JSON-stringified arrays**: `add_threads` and `del_threads` are JSON strings
 
 ---
+
+## 2026-01-16 - Batch 5: Account & Profile
+Thread: Thread: T-019bc5e1-5ab1-71c8-a9e0-2862effd581e
+Task ID: 83
+
+### Implemented
+10 Account & Profile endpoints:
+- FetchAccountInfo - /api/social/profile/me-v2 (GET, "profile" service)
+- UpdateProfile - /api/social/profile/update (POST, "profile" service)
+- ChangeAccountAvatar - /api/profile/upavatar (POST multipart, "file" service)
+- DeleteAvatar - /api/social/del-avatars (GET, "profile" service)
+- GetAvatarList - /api/social/avatar-list (GET, "profile" service)
+- ReuseAvatar - /api/social/reuse-avatar (GET, "profile" service)
+- UpdateActiveStatus - /api/social/profile/ping or /deactive (GET, "profile" service)
+- UpdateSettings - /api/setting/update (GET, hardcoded wpa.chat.zalo.me)
+- GetSettings - /api/setting/me (GET, hardcoded wpa.chat.zalo.me)
+- UpdateLang - /api/social/profile/updatelang (GET, "profile" service)
+
+### Files Changed
+Endpoints (lib/zca_ex/api/endpoints/):
+- fetch_account_info.ex, update_profile.ex, change_account_avatar.ex
+- delete_avatar.ex, get_avatar_list.ex, reuse_avatar.ex
+- update_active_status.ex, update_settings.ex, get_settings.ex, update_lang.ex
+
+Tests (test/zca_ex/api/endpoints/):
+- Corresponding _test.exs for each endpoint (133 new tests)
+
+### Learnings for Future Iterations
+- **Hardcoded URLs**: Settings endpoints use hardcoded `wpa.chat.zalo.me` instead of service map
+- **File vs profile service**: Avatar upload uses "file" service, others use "profile"
+- **UpdateActiveStatus uses different paths**: /ping for active=true, /deactive for active=false
+- **Multipart uploads**: Use AccountClient.post_multipart/4, encrypted params go in URL query
+- **Language validation**: Always validate to whitelist (:vi, :en) to avoid unexpected server behavior
+- **Default args issue**: Elixir requires defaults at end - `def build_params(page \\ 1, count \\ 50, imei)` is invalid
+- **Avoid Jason.encode!/1**: Use Jason.encode/1 with pattern match `{:ok, json}` to keep errors in-band
+
+---
