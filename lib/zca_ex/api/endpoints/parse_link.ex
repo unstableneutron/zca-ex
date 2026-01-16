@@ -12,13 +12,18 @@ defmodule ZcaEx.Api.Endpoints.ParseLink do
 
   alias ZcaEx.Error
 
-  @type link_metadata :: %{
+  @type link_data :: %{
           thumb: String.t(),
           title: String.t(),
           desc: String.t(),
           src: String.t(),
           href: String.t(),
           media: map()
+        }
+
+  @type link_metadata :: %{
+          data: link_data(),
+          error_maps: map()
         }
 
   @doc "Parse a link to extract metadata"
@@ -30,7 +35,8 @@ defmodule ZcaEx.Api.Endpoints.ParseLink do
 
       case encrypt_params(session.secret_key, params) do
         {:ok, encrypted_params} ->
-          full_url = url <> "&params=" <> URI.encode_www_form(encrypted_params)
+          separator = if String.contains?(url, "?"), do: "&", else: "?"
+          full_url = url <> separator <> "params=" <> URI.encode_www_form(encrypted_params)
 
           case AccountClient.get(credentials.imei, full_url, credentials.user_agent) do
             {:ok, response} ->
@@ -67,15 +73,33 @@ defmodule ZcaEx.Api.Endpoints.ParseLink do
   defp validate_link(link) when is_binary(link) and byte_size(link) > 0, do: :ok
   defp validate_link(_), do: {:error, %Error{message: "Missing link", code: nil}}
 
+  defp extract_data({:ok, %{"data" => data, "error_maps" => error_maps}}) do
+    {:ok,
+     %{
+       data: %{
+         thumb: data["thumb"] || "",
+         title: data["title"] || "",
+         desc: data["desc"] || "",
+         src: data["src"] || "",
+         href: data["href"] || "",
+         media: data["media"] || %{}
+       },
+       error_maps: error_maps || %{}
+     }}
+  end
+
   defp extract_data({:ok, %{"data" => data}}) do
     {:ok,
      %{
-       thumb: data["thumb"] || "",
-       title: data["title"] || "",
-       desc: data["desc"] || "",
-       src: data["src"] || "",
-       href: data["href"] || "",
-       media: data["media"] || %{}
+       data: %{
+         thumb: data["thumb"] || "",
+         title: data["title"] || "",
+         desc: data["desc"] || "",
+         src: data["src"] || "",
+         href: data["href"] || "",
+         media: data["media"] || %{}
+       },
+       error_maps: %{}
      }}
   end
 

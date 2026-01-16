@@ -51,7 +51,7 @@ defmodule ZcaEx.Api.Endpoints.SendSticker do
     :ok
   end
 
-  defp validate_sticker(%{id: id, cate_id: cate_id, type: type} = sticker) do
+  defp validate_sticker(%{id: id, cate_id: cate_id, type: type} = _sticker) do
     cond do
       not is_integer(id) or id <= 0 ->
         {:error, %Error{message: "Missing sticker id", code: nil}}

@@ -26,16 +26,19 @@ defmodule ZcaEx.Api.Endpoints.SendLinkTest do
         cookies: [%{"name" => "test", "value" => "cookie"}]
       )
 
-    link_data = %{
-      thumb: "https://example.com/thumb.jpg",
-      title: "Example Title",
-      desc: "Example description",
-      src: "example.com",
-      href: "https://example.com",
-      media: %{"type" => 0}
+    link_metadata = %{
+      data: %{
+        thumb: "https://example.com/thumb.jpg",
+        title: "Example Title",
+        desc: "Example description",
+        src: "example.com",
+        href: "https://example.com",
+        media: %{"type" => 0}
+      },
+      error_maps: %{}
     }
 
-    {:ok, session: session, credentials: credentials, link_data: link_data}
+    {:ok, session: session, credentials: credentials, link_metadata: link_metadata}
   end
 
   describe "build_url/2" do
@@ -55,28 +58,28 @@ defmodule ZcaEx.Api.Endpoints.SendLinkTest do
   end
 
   describe "build_params/5" do
-    test "builds user params with toId and mentionInfo", %{credentials: creds, link_data: link_data} do
+    test "builds user params with toId and mentionInfo", %{credentials: creds, link_metadata: link_metadata} do
       options = %{link: "https://example.com"}
 
-      params = SendLink.build_params(options, link_data, "user123", :user, creds)
+      params = SendLink.build_params(options, link_metadata, "user123", :user, creds)
 
       assert params.msg == "https://example.com"
       assert params.toId == "user123"
       assert params.mentionInfo == ""
-      assert params.href == link_data.href
-      assert params.src == link_data.src
-      assert params.title == link_data.title
-      assert params.desc == link_data.desc
-      assert params.thumb == link_data.thumb
+      assert params.href == link_metadata.data.href
+      assert params.src == link_metadata.data.src
+      assert params.title == link_metadata.data.title
+      assert params.desc == link_metadata.data.desc
+      assert params.thumb == link_metadata.data.thumb
       assert params.type == 2
       assert params.ttl == 0
       refute Map.has_key?(params, :grid)
     end
 
-    test "builds group params with grid and imei", %{credentials: creds, link_data: link_data} do
+    test "builds group params with grid and imei", %{credentials: creds, link_metadata: link_metadata} do
       options = %{link: "https://example.com"}
 
-      params = SendLink.build_params(options, link_data, "group123", :group, creds)
+      params = SendLink.build_params(options, link_metadata, "group123", :group, creds)
 
       assert params.msg == "https://example.com"
       assert params.grid == "group123"
@@ -85,37 +88,37 @@ defmodule ZcaEx.Api.Endpoints.SendLinkTest do
       refute Map.has_key?(params, :mentionInfo)
     end
 
-    test "uses msg if provided and contains link", %{credentials: creds, link_data: link_data} do
+    test "uses msg if provided and contains link", %{credentials: creds, link_metadata: link_metadata} do
       options = %{link: "https://example.com", msg: "Check this out https://example.com"}
 
-      params = SendLink.build_params(options, link_data, "user123", :user, creds)
+      params = SendLink.build_params(options, link_metadata, "user123", :user, creds)
 
       assert params.msg == "Check this out https://example.com"
     end
 
-    test "appends link to msg if not already present", %{credentials: creds, link_data: link_data} do
+    test "appends link to msg if not already present", %{credentials: creds, link_metadata: link_metadata} do
       options = %{link: "https://example.com", msg: "Check this out"}
 
-      params = SendLink.build_params(options, link_data, "user123", :user, creds)
+      params = SendLink.build_params(options, link_metadata, "user123", :user, creds)
 
       assert params.msg == "Check this out https://example.com"
     end
 
-    test "includes custom ttl when provided", %{credentials: creds, link_data: link_data} do
+    test "includes custom ttl when provided", %{credentials: creds, link_metadata: link_metadata} do
       options = %{link: "https://example.com", ttl: 60000}
 
-      params = SendLink.build_params(options, link_data, "user123", :user, creds)
+      params = SendLink.build_params(options, link_metadata, "user123", :user, creds)
 
       assert params.ttl == 60000
     end
 
-    test "encodes media as JSON", %{credentials: creds, link_data: link_data} do
+    test "encodes media as JSON", %{credentials: creds, link_metadata: link_metadata} do
       options = %{link: "https://example.com"}
 
-      params = SendLink.build_params(options, link_data, "user123", :user, creds)
+      params = SendLink.build_params(options, link_metadata, "user123", :user, creds)
 
       assert is_binary(params.media)
-      assert Jason.decode!(params.media) == link_data.media
+      assert Jason.decode!(params.media) == link_metadata.data.media
     end
   end
 

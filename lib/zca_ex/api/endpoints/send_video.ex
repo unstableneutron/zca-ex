@@ -32,6 +32,7 @@ defmodule ZcaEx.Api.Endpoints.SendVideo do
   def send(options, thread_id, thread_type, session, credentials) do
     with :ok <- validate_options(options),
          :ok <- validate_thread_id(thread_id),
+         :ok <- validate_thread_type(thread_type),
          {:ok, file_size} <- fetch_file_size(options.video_url) do
       url = build_url(session, thread_type)
       params = build_params(options, thread_id, thread_type, file_size, credentials)
@@ -130,8 +131,8 @@ defmodule ZcaEx.Api.Endpoints.SendVideo do
 
         {:ok, content_length || 0}
 
-      {:ok, %{status: status}} ->
-        {:error, %Error{message: "HEAD request failed with status #{status}", code: nil}}
+      {:ok, %{status: _status}} ->
+        {:ok, 0}
 
       {:error, reason} ->
         {:error, %Error{message: "Unable to get video content: #{inspect(reason)}", code: nil}}
@@ -149,6 +150,9 @@ defmodule ZcaEx.Api.Endpoints.SendVideo do
 
   defp validate_thread_id(id) when is_binary(id) and byte_size(id) > 0, do: :ok
   defp validate_thread_id(_), do: {:error, %Error{message: "Missing threadId", code: nil}}
+
+  defp validate_thread_type(type) when type in [:user, :group], do: :ok
+  defp validate_thread_type(_), do: {:error, %Error{message: "Thread type is invalid", code: nil}}
 
   defp extract_msg_id({:ok, %{"msgId" => msg_id}}), do: {:ok, %{msg_id: msg_id}}
   defp extract_msg_id({:ok, data}) when is_map(data), do: {:ok, data}

@@ -62,9 +62,10 @@ defmodule ZcaEx.Api.Endpoints.SendLink do
 
   @doc "Build API params from options and link metadata"
   @spec build_params(options(), map(), String.t(), :user | :group, Credentials.t()) :: map()
-  def build_params(options, link_data, thread_id, thread_type, credentials) do
+  def build_params(options, link_metadata, thread_id, thread_type, credentials) do
     msg = build_message(options)
     is_group = thread_type == :group
+    link_data = link_metadata.data
 
     base_params = %{
       msg: msg,

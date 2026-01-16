@@ -37,30 +37,45 @@ defmodule ZcaEx.Api.Endpoints.DeleteMessage do
   @spec call(destination(), boolean(), Session.t(), Credentials.t()) ::
           {:ok, %{status: integer()}} | {:error, ZcaEx.Error.t()}
   def call(destination, only_me \\ false, session, credentials) do
-    thread_type = destination[:type] || destination.type || :user
-    is_self = destination.data.uid_from == session.uid
+    with :ok <- validate_destination(destination) do
+      thread_type = destination[:type] || destination.type || :user
+      is_self = destination.data.uid_from == session.uid
 
-    with :ok <- validate_delete(is_self, only_me, thread_type) do
-      params = build_params(destination, only_me, thread_type, credentials)
+      with :ok <- validate_delete(is_self, only_me, thread_type) do
+        params = build_params(destination, only_me, thread_type, credentials)
 
-      case encrypt_params(session.secret_key, params) do
-        {:ok, encrypted_params} ->
-          url = build_url(thread_type, session)
-          body = build_form_body(%{params: encrypted_params})
+        case encrypt_params(session.secret_key, params) do
+          {:ok, encrypted_params} ->
+            url = build_url(thread_type, session)
+            body = build_form_body(%{params: encrypted_params})
 
-          case AccountClient.post(credentials.imei, url, body, credentials.user_agent) do
-            {:ok, resp} ->
-              Response.parse(resp, session.secret_key)
-              |> transform_response()
+            case AccountClient.post(credentials.imei, url, body, credentials.user_agent) do
+              {:ok, resp} ->
+                Response.parse(resp, session.secret_key)
+                |> transform_response()
 
-            {:error, reason} ->
-              {:error, %ZcaEx.Error{message: "Request failed: #{inspect(reason)}", code: nil}}
-          end
+              {:error, reason} ->
+                {:error, %ZcaEx.Error{message: "Request failed: #{inspect(reason)}", code: nil}}
+            end
 
-        {:error, _} = error ->
-          error
+          {:error, _} = error ->
+            error
+        end
       end
     end
+  end
+
+  defp validate_destination(%{data: %{cli_msg_id: _, msg_id: _, uid_from: _}, thread_id: thread_id})
+       when is_binary(thread_id) and byte_size(thread_id) > 0 do
+    :ok
+  end
+
+  defp validate_destination(_) do
+    {:error,
+     %ZcaEx.Error{
+       message: "Invalid destination: must have data (cli_msg_id, msg_id, uid_from) and thread_id",
+       code: nil
+     }}
   end
 
   defp validate_delete(true, false, _thread_type) do
