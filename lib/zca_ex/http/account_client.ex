@@ -38,4 +38,24 @@ defmodule ZcaEx.HTTP.AccountClient do
         error
     end
   end
+
+  @doc """
+  Make a POST request with form-encoded body from a params map.
+  Automatically builds x-www-form-urlencoded body from params.
+  """
+  @spec post_form(term(), String.t(), map() | keyword(), String.t(), [{String.t(), String.t()}]) ::
+          result()
+  def post_form(account_id, url, params, user_agent, extra_headers \\ []) do
+    body = build_form_body(params)
+    post(account_id, url, body, user_agent, extra_headers)
+  end
+
+  defp build_form_body(params) do
+    params
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.map(fn {k, v} ->
+      "#{URI.encode_www_form(to_string(k))}=#{URI.encode_www_form(to_string(v))}"
+    end)
+    |> Enum.join("&")
+  end
 end

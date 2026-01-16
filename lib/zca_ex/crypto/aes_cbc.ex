@@ -29,6 +29,21 @@ defmodule ZcaEx.Crypto.AesCbc do
   end
 
   @doc """
+  Encrypt with a Base64-encoded key.
+  Returns base64-encoded ciphertext.
+  """
+  @spec encrypt_base64_key(binary(), String.t()) :: String.t() | nil
+  def encrypt_base64_key(_key, ""), do: nil
+  def encrypt_base64_key(_key, nil), do: nil
+
+  def encrypt_base64_key(key, plaintext) when is_binary(key) and is_binary(plaintext) do
+    padded = pkcs7_pad(plaintext)
+    cipher = cipher_for_key(key)
+    ciphertext = :crypto.crypto_one_time(cipher, key, @zero_iv, padded, true)
+    Base.encode64(ciphertext)
+  end
+
+  @doc """
   Decrypt with a Base64-encoded key.
   Returns plaintext string.
   """
