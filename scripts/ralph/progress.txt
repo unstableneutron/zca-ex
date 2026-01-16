@@ -245,3 +245,43 @@ Tests (test/zca_ex/api/endpoints/):
 - **Consistent service URL fallback**: Use fallback pattern (`_ -> "https://..."`) instead of raising for stable services
 
 ---
+
+## 2026-01-16 - Batch 9: Notes & Labels
+Thread: Thread: T-019bc610-e2c9-70ba-a692-5a8d02ad1236
+Task ID: 87
+
+### Implemented
+7 Notes & Labels endpoints:
+
+**Note endpoints (group_board service):**
+- CreateNote - /api/board/topic/createv2 (POST, pinAct: 0=unpin, 1=pin)
+- EditNote - /api/board/topic/updatev2 (POST, pinAct: 1=pin, 2=unpin)
+
+**Label endpoints (label service):**
+- GetLabels - /api/convlabel/get (GET)
+- UpdateLabels - /api/convlabel/update (POST)
+
+**Unread Mark endpoints (conversation service):**
+- AddUnreadMark - /api/conv/addUnreadMark (POST)
+- GetUnreadMark - /api/conv/getUnreadMark (GET)
+- RemoveUnreadMark - /api/conv/removeUnreadMark (POST)
+
+### Files Changed
+Endpoints (lib/zca_ex/api/endpoints/):
+- create_note.ex, edit_note.ex
+- get_labels.ex, update_labels.ex
+- add_unread_mark.ex, get_unread_mark.ex, remove_unread_mark.ex
+
+Tests (test/zca_ex/api/endpoints/):
+- Corresponding _test.exs for each endpoint (119 new tests, total now 1528)
+
+### Learnings for Future Iterations
+- **Default args must be trailing**: Use wrapper functions like `def create(a, b, session, creds), do: create(a, b, false, session, creds)` instead of `def create(a, b, pin? \\ false, session, creds)`
+- **build_params returning {:ok, map} pattern**: When build_params may fail (e.g., JSON encoding), return `{:ok, params}` and use `with` chain
+- **Use Error.new/3 consistently**: For validation errors: `Error.new(:api, msg, code: :invalid_input)`, for network: `Error.new(:network, msg, reason: reason)`
+- **pinAct semantics differ between Create and Edit**: CreateNote uses 0=unpin/1=pin, EditNote uses 1=pin/2=unpin
+- **labelData is JSON string in response**: Both GetLabels and UpdateLabels return labelData as JSON string needing parse
+- **Unread mark nested param field**: param field contains JSON-stringified inner object with convsUser/convsGroup arrays
+- **Response data may be string or map**: Transform functions handle both `data["field"]` and `data[:field]` keys
+
+---

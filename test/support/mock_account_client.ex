@@ -22,6 +22,21 @@ defmodule ZcaEx.Test.MockAccountClient do
     Process.get(:mock_last_request)
   end
 
+  @doc "Mock GET request"
+  @spec get(term(), String.t(), String.t(), [{String.t(), String.t()}]) ::
+          {:ok, ZcaEx.HTTP.Response.t()} | {:error, term()}
+  def get(_account_id, url, _user_agent, headers \\ []) do
+    Process.put(:mock_last_request, {url, nil, headers})
+
+    case Process.get(:mock_http_response) do
+      nil ->
+        {:error, :no_mock_response}
+
+      %{status: status, body: response_body, headers: resp_headers} ->
+        {:ok, %ZcaEx.HTTP.Response{status: status, body: response_body, headers: resp_headers}}
+    end
+  end
+
   @doc "Mock POST request"
   @spec post(term(), String.t(), String.t(), String.t(), [{String.t(), String.t()}]) ::
           {:ok, ZcaEx.HTTP.Response.t()} | {:error, term()}
