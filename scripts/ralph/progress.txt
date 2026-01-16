@@ -322,3 +322,51 @@ Tests (test/zca_ex/api/endpoints/):
 - **recurrence field is array**: Auto-reply uses `["RRULE:FREQ=DAILY;"]` fixed array format
 
 ---
+
+## 2026-01-16 - Batch 11: Business Features
+Thread: Thread: T-019bc63a-795b-753b-bcd3-9ab660a57274
+Task ID: 89
+
+### Implemented
+11 Business Features endpoints:
+
+**Biz Account (profile service):**
+- GetBizAccount - /api/social/friend/get-bizacc (POST)
+
+**Catalog endpoints (catalog service):**
+- CreateCatalog - /api/prodcatalog/catalog/create (POST)
+- GetCatalogList - /api/prodcatalog/catalog/list (POST)
+- UpdateCatalog - /api/prodcatalog/catalog/update (POST)
+- DeleteCatalog - /api/prodcatalog/catalog/delete (POST)
+
+**Product Catalog endpoints (catalog service):**
+- CreateProductCatalog - /api/prodcatalog/product/create (POST)
+- GetProductCatalogList - /api/prodcatalog/product/list (POST)
+- UpdateProductCatalog - /api/prodcatalog/product/update (POST)
+- DeleteProductCatalog - /api/prodcatalog/product/mdelete (POST)
+
+**File & Messaging (file/chat services):**
+- UploadProductPhoto - /api/product/upload/photo (POST multipart, file service)
+- SendBankCard - /api/transfer/card (POST, chat service)
+
+### Files Changed
+Endpoints (lib/zca_ex/api/endpoints/):
+- get_biz_account.ex
+- create_catalog.ex, get_catalog_list.ex, update_catalog.ex, delete_catalog.ex
+- create_product_catalog.ex, get_product_catalog_list.ex, update_product_catalog.ex, delete_product_catalog.ex
+- upload_product_photo.ex, send_bank_card.ex
+
+Tests (test/zca_ex/api/endpoints/):
+- Corresponding _test.exs for each endpoint (106 new tests, total now 1814)
+
+### Learnings for Future Iterations
+- **All catalog/product endpoints use POST**: Unlike other endpoints that may use GET for reads
+- **API params use snake_case**: catalog_id, product_name, product_photos, currency_unit, create_time, etc.
+- **Max 5 product photos**: Validated in create/update product catalog
+- **Currency unit default**: "₫" (Vietnamese Dong)
+- **UploadProductPhoto uses multipart**: Params in URL query (encrypted), binary data in multipart body
+- **SendBankCard uses chat service**: Via "chat" key in zpw_service_map, not "zimsg"
+- **thread_type for bank card**: :user (destType: 0) or :group (destType: 1)
+- **Account holder name uppercased**: SendBankCard auto-uppercases nameAccBank, defaults to "---"
+
+---
