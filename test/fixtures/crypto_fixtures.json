@@ -1,0 +1,150 @@
+{
+  "md5": [
+    {
+      "input": "hello",
+      "output": "5d41402abc4b2a76b9719d911017c592"
+    },
+    {
+      "input": "zsecuregetlogininfo",
+      "output": "9446e79f6a31ec2550cfcc6ed86aba4b"
+    },
+    {
+      "input": "test123",
+      "output": "cc03e747a6afbbcbf8be7668acfebee5"
+    },
+    {
+      "input": "",
+      "output": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "input": "日本語テスト",
+      "output": "f95716c1bda20a02d24c31e402d795d2"
+    }
+  ],
+  "aes_cbc": [
+    {
+      "key": "3FC4F0D2AB50057BCE0D90D9187A22B1",
+      "message": "1,test-imei-12345,1704067200000",
+      "type": "hex",
+      "uppercase": true,
+      "output": "EC51C74D3E5A1E10B362959E1BEE2FE1F8E9BE28ACC1F575045B4847894FBD8A"
+    },
+    {
+      "key": "3FC4F0D2AB50057BCE0D90D9187A22B1",
+      "message": "{\"computer_name\":\"Web\",\"imei\":\"test-imei\",\"language\":\"en\",\"ts\":1704067200000}",
+      "type": "base64",
+      "uppercase": false,
+      "output": "Yia8qpGTZv+SlaCJlcAd+lpKbtmqnAKPuuBRxJw8UlfZ+j+A93P/XkSwOADZDJqtjdG5tPj8vgOZRr28pUs2R3QdXXesOUIyxyVctA4og9w="
+    },
+    {
+      "key": "ABCD1234ABCD1234ABCD1234ABCD1234",
+      "message": "simple test message",
+      "type": "hex",
+      "uppercase": false,
+      "output": "a4a198cb91b67e3d8a20c00f00e41adc63926bfb72692227d450327c081b846c"
+    }
+  ],
+  "params_encryptor": [
+    {
+      "type": 30,
+      "imei": "test-imei-12345",
+      "firstLaunchTime": 1704067200000,
+      "zcid_ext": "a1b2c3d4e5f6",
+      "expected_zcid": "4F64BD29470A9DC69C4ABD49735481C326CC2190BF1BDA506B57CC82F7B2944A26CEA62ED83673EB3FF84957C9F2929D",
+      "expected_zcid_ext_md5": "025D43B1978D96E4D40D2316C90E3CAA",
+      "expected_encrypt_key": "054B989E46B2409C94B4D229798FB368"
+    }
+  ],
+  "sign_key": [
+    {
+      "type": "getlogininfo",
+      "params": {
+        "computer_name": "Web",
+        "imei": "test-imei",
+        "language": "en",
+        "ts": 1704067200000,
+        "type": 30,
+        "client_version": 645
+      },
+      "expected": "4c634d9aa6981e43c2b1f3b046bf225b"
+    },
+    {
+      "type": "getserverinfo",
+      "params": {
+        "imei": "test-imei",
+        "type": 30,
+        "client_version": 645,
+        "computer_name": "Web"
+      },
+      "expected": "5696e230f05c97e30a8e928b0b8a1b32"
+    }
+  ],
+  "aes_gcm": [
+    {
+      "key": "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY=",
+      "plaintext": "{\"data\":\"test message\"}",
+      "combined_base64": "77UnFv6DB3csXSQdgkTzE2TALzVtRYIzYocAme8mKGZv8ZkeplO7PtepnZEsOvEgAWW1oQtaWPYHOPvGmVTx08dMuK1YHIU=",
+      "iv_hex": "efb52716fe8307772c5d241d8244f313",
+      "aad_hex": "64c02f356d45823362870099ef262866",
+      "ciphertext_hex": "6ff1991ea653bb3ed7a99d912c3af1200165b5a10b5a58",
+      "auth_tag_hex": "f60738fbc69954f1d3c74cb8ad581c85"
+    }
+  ],
+  "aes_cbc_decrypt": [
+    {
+      "secretKey": "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4",
+      "encrypted": "JC+EhgCpP8/8iT71wsUv0A==",
+      "plaintext": "Hello, World!"
+    }
+  ],
+  "ws_frame": [
+    {
+      "version": 1,
+      "cmd": 1,
+      "subCmd": 1,
+      "data": {
+        "key": "test-cipher-key"
+      },
+      "binary_hex": "010100017b226b6579223a22746573742d6369706865722d6b6579227d",
+      "binary_base64": "AQEAAXsia2V5IjoidGVzdC1jaXBoZXIta2V5In0="
+    },
+    {
+      "version": 1,
+      "cmd": 2,
+      "subCmd": 1,
+      "data": {
+        "eventId": 1704067200000
+      },
+      "binary_hex": "010200017b226576656e744964223a313730343036373230303030307d",
+      "binary_base64": "AQIAAXsiZXZlbnRJZCI6MTcwNDA2NzIwMDAwMH0="
+    },
+    {
+      "version": 1,
+      "cmd": 501,
+      "subCmd": 0,
+      "data": {
+        "msgs": []
+      },
+      "binary_hex": "01f501007b226d736773223a5b5d7d",
+      "binary_base64": "AfUBAHsibXNncyI6W119"
+    },
+    {
+      "version": 1,
+      "cmd": 521,
+      "subCmd": 0,
+      "data": {
+        "groupMsgs": []
+      },
+      "binary_hex": "010902007b2267726f75704d736773223a5b5d7d",
+      "binary_base64": "AQkCAHsiZ3JvdXBNc2dzIjpbXX0="
+    },
+    {
+      "version": 1,
+      "cmd": 3000,
+      "subCmd": 0,
+      "data": {},
+      "binary_hex": "01b80b007b7d",
+      "binary_base64": "AbgLAHt9"
+    }
+  ]
+}
