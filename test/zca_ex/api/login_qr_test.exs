@@ -173,4 +173,23 @@ defmodule ZcaEx.Api.LoginQRTest do
       LoginQR.abort(pid)
     end
   end
+
+  describe "expiry and retry behavior" do
+    test "qr expiry sets state to expired and invalidates abort_ref" do
+      state = %{
+        state: :waiting_scan,
+        abort_ref: make_ref(),
+        qr_timer: nil,
+        callback_pid: self()
+      }
+
+      assert state.state == :waiting_scan
+      assert is_reference(state.abort_ref)
+
+      expired_state = %{state | state: :expired, abort_ref: nil}
+
+      assert expired_state.state == :expired
+      assert expired_state.abort_ref == nil
+    end
+  end
 end

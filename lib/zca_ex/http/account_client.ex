@@ -105,7 +105,7 @@ defmodule ZcaEx.HTTP.AccountClient do
   defp build_multipart_body(parts, boundary) do
     parts_binary =
       Enum.map(parts, fn {name, content, opts} ->
-        filename = Keyword.get(opts, :filename, "file")
+        filename = Keyword.get(opts, :filename, "file") |> sanitize_filename()
         content_type = Keyword.get(opts, :content_type, "application/octet-stream")
 
         [
@@ -119,5 +119,11 @@ defmodule ZcaEx.HTTP.AccountClient do
       end)
 
     IO.iodata_to_binary([parts_binary, "--#{boundary}--\r\n"])
+  end
+
+  defp sanitize_filename(filename) do
+    filename
+    |> String.replace("\"", "\\\"")
+    |> String.replace(~r/[\r\n]/, "")
   end
 end

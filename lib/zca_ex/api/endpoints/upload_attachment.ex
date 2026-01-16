@@ -35,6 +35,11 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachment do
       {:ok, data} = File.read("/path/to/image.jpg")
       source = AttachmentSource.from_binary(data, "image.jpg", width: 800, height: 600)
       UploadAttachment.upload(source, thread_id, :user, session, creds)
+
+  ## Large File Note
+  For files larger than 50MB, consider implementing a streaming approach to reduce
+  memory usage. The current implementation loads the entire file into memory before
+  chunking, which may cause issues with very large files.
   """
 
   use ZcaEx.Api.Factory
@@ -94,12 +99,18 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachment do
 
   defp get_sharefile_settings(session) do
     sharefile = get_in(session.settings, ["features", "sharefile"]) || %{}
+    chunk_size = sharefile["chunk_size_file"]
+
+    chunk_size =
+      if is_integer(chunk_size) and chunk_size > 0,
+        do: chunk_size,
+        else: @default_chunk_size
 
     %{
-      chunk_size: sharefile["chunk_size_file"] || @default_chunk_size,
+      chunk_size: chunk_size,
       max_files: sharefile["max_file"] || @default_max_files,
       max_size_mb: sharefile["max_size_share_file_v3"] || @default_max_size_mb,
-      restricted_ext: sharefile["restricted_ext_file"] || @default_restricted_ext
+      restricted_ext: (sharefile["restricted_ext_file"] || @default_restricted_ext) |> Enum.map(&String.downcase/1)
     }
   end
 
@@ -204,7 +215,7 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachment do
   end
 
   defp read_file_data(%AttachmentSource{type: :binary, data: data, filename: filename, metadata: metadata}, file_type) do
-    total_size = metadata[:total_size] || byte_size(data)
+    total_size = byte_size(data)
     file_data = build_file_data(filename, total_size, file_type, metadata)
     {:ok, file_data, data}
   end
@@ -225,6 +236,10 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachment do
     }
   end
 
+  defp validate_file_size(0, filename, _settings) do
+    {:error, Error.api(nil, "Empty file not allowed: #{filename}")}
+  end
+
   defp validate_file_size(size, filename, settings) do
     max_bytes = settings.max_size_mb * 1024 * 1024
 
@@ -236,41 +251,49 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachment do
   end
 
   defp upload_all(attachments, thread_id, thread_type, session, creds, settings) do
-    base_url = get_base_url(session, thread_type)
-    type_param = if thread_type == :group, do: "11", else: "2"
+    case get_base_url(session, thread_type) do
+      {:error, _} = err ->
+        err
 
-    client_id_start = System.system_time(:millisecond)
+      {:ok, base_url} ->
+        type_param = if thread_type == :group, do: "11", else: "2"
 
-    results =
-      attachments
-      |> Enum.with_index()
-      |> Enum.map(fn {attachment, idx} ->
-        client_id = client_id_start + idx
+        client_id_start = System.system_time(:millisecond)
 
-        upload_attachment(
-          attachment,
-          thread_id,
-          thread_type,
-          base_url,
-          type_param,
-          client_id,
-          session,
-          creds,
-          settings
-        )
-      end)
+        results =
+          attachments
+          |> Enum.with_index()
+          |> Enum.map(fn {attachment, idx} ->
+            client_id = client_id_start + idx
 
-    errors = Enum.filter(results, &match?({:error, _}, &1))
+            upload_attachment(
+              attachment,
+              thread_id,
+              thread_type,
+              base_url,
+              type_param,
+              client_id,
+              session,
+              creds,
+              settings
+            )
+          end)
 
-    if errors == [] do
-      {:ok, Enum.map(results, fn {:ok, resp} -> resp end)}
-    else
-      hd(errors)
+        errors = Enum.filter(results, &match?({:error, _}, &1))
+
+        if errors == [] do
+          {:ok, Enum.map(results, fn {:ok, resp} -> resp end)}
+        else
+          hd(errors)
+        end
     end
   end
 
   defp get_base_url(session, _thread_type) do
-    get_in(session.zpw_service_map, ["file", Access.at(0)]) <> "/api"
+    case get_in(session.zpw_service_map, ["file", Access.at(0)]) do
+      nil -> {:error, Error.api(nil, "Missing file service URL in session")}
+      url -> {:ok, url <> "/api"}
+    end
   end
 
   defp upload_attachment(attachment, thread_id, thread_type, base_url, type_param, client_id, session, creds, settings) do

@@ -32,6 +32,7 @@ defmodule ZcaEx.Api.LoginQR do
           | :waiting_confirm
           | :complete
           | :aborted
+          | :expired
           | :error
 
   @type t :: %{
@@ -111,10 +112,7 @@ defmodule ZcaEx.Api.LoginQR do
 
   @impl true
   def terminate(_reason, state) do
-    case Registry.lookup(ZcaEx.Registry, {:cookie_jar, state.cookie_jar_id}) do
-      [{pid, _}] -> GenServer.stop(pid, :normal)
-      [] -> :ok
-    end
+    stop_cookie_jar(state.cookie_jar_id)
   end
 
   @impl true
@@ -126,10 +124,22 @@ defmodule ZcaEx.Api.LoginQR do
 
   def handle_cast(:retry, state) do
     cancel_qr_timer(state)
+    stop_cookie_jar(state.cookie_jar_id)
+
+    new_cookie_jar_id = make_ref()
+    {:ok, _jar_pid} = CookieJar.start_link(account_id: new_cookie_jar_id)
+
     abort_ref = make_ref()
-    state = %{state | state: :initializing, qr_code: nil, qr_timer: nil, abort_ref: abort_ref}
+    state = %{state | state: :initializing, qr_code: nil, qr_timer: nil, abort_ref: abort_ref, cookie_jar_id: new_cookie_jar_id}
     send(self(), {:run_flow, abort_ref})
     {:noreply, state}
+  end
+
+  defp stop_cookie_jar(cookie_jar_id) do
+    case Registry.lookup(ZcaEx.Registry, {:cookie_jar, cookie_jar_id}) do
+      [{pid, _}] -> GenServer.stop(pid, :normal)
+      [] -> :ok
+    end
   end
 
   @impl true
@@ -153,7 +163,8 @@ defmodule ZcaEx.Api.LoginQR do
 
   def handle_info({:qr_expired, abort_ref}, %{abort_ref: abort_ref} = state) do
     send_event(state, Events.qr_expired())
-    {:noreply, %{state | qr_timer: nil}}
+    new_abort_ref = make_ref()
+    {:noreply, %{state | qr_timer: nil, state: :expired, abort_ref: new_abort_ref}}
   end
 
   def handle_info({:qr_expired, _old_ref}, state) do
@@ -326,9 +337,9 @@ defmodule ZcaEx.Api.LoginQR do
     headers = form_headers(state)
 
     case Client.post(url, body, headers) do
-      {:ok, %{status: 200, headers: resp_headers}} ->
+      {:ok, %{status: 200, body: body, headers: resp_headers}} ->
         store_cookies(state, url, resp_headers)
-        :ok
+        validate_error_code(body)
 
       {:ok, %{status: status}} ->
         {:error, Error.api(status, "Failed to get login info")}
@@ -351,9 +362,9 @@ defmodule ZcaEx.Api.LoginQR do
     headers = form_headers(state)
 
     case Client.post(url, body, headers) do
-      {:ok, %{status: 200, headers: resp_headers}} ->
+      {:ok, %{status: 200, body: body, headers: resp_headers}} ->
         store_cookies(state, url, resp_headers)
-        :ok
+        validate_error_code(body)
 
       {:ok, %{status: status}} ->
         {:error, Error.api(status, "Failed to verify client")}
@@ -560,6 +571,15 @@ defmodule ZcaEx.Api.LoginQR do
 
   defp send_event(%{callback_pid: nil}, _event), do: :ok
   defp send_event(%{callback_pid: pid}, event), do: send(pid, {:zca_qr_login, event})
+
+  defp validate_error_code(body) do
+    case Jason.decode(body) do
+      {:ok, %{"error_code" => 0}} -> :ok
+      {:ok, %{"error_code" => code, "error_message" => msg}} -> {:error, Error.api(code, msg)}
+      {:ok, _} -> :ok
+      {:error, _} -> :ok
+    end
+  end
 
   defp strip_data_uri(image) when is_binary(image) do
     String.replace(image, ~r/^data:image\/png;base64,/, "")

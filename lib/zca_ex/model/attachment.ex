@@ -76,12 +76,13 @@ defmodule ZcaEx.Model.Attachment do
     @moduledoc "Response for an uploaded image"
 
     @type t :: %__MODULE__{
-            normal_url: String.t(),
+            file_type: :image,
+            normal_url: String.t() | nil,
             photo_id: String.t(),
-            hd_url: String.t(),
-            thumb_url: String.t(),
-            width: non_neg_integer(),
-            height: non_neg_integer(),
+            hd_url: String.t() | nil,
+            thumb_url: String.t() | nil,
+            width: non_neg_integer() | nil,
+            height: non_neg_integer() | nil,
             total_size: non_neg_integer(),
             hd_size: non_neg_integer(),
             finished: boolean(),
@@ -100,12 +101,14 @@ defmodule ZcaEx.Model.Attachment do
       :hd_size,
       :finished,
       :client_file_id,
-      :chunk_id
+      :chunk_id,
+      file_type: :image
     ]
 
     @spec from_response(map(), map()) :: t()
     def from_response(response, file_data) do
       %__MODULE__{
+        file_type: :image,
         normal_url: response["normalUrl"],
         photo_id: response["photoId"],
         hd_url: response["hdUrl"],
@@ -131,6 +134,7 @@ defmodule ZcaEx.Model.Attachment do
     @moduledoc "Response for an uploaded video"
 
     @type t :: %__MODULE__{
+            file_type: :video,
             file_url: String.t() | nil,
             file_id: String.t(),
             checksum: String.t(),
@@ -149,12 +153,14 @@ defmodule ZcaEx.Model.Attachment do
       :file_name,
       :finished,
       :client_file_id,
-      :chunk_id
+      :chunk_id,
+      file_type: :video
     ]
 
     @spec from_response(map(), map(), String.t()) :: t()
     def from_response(response, file_data, checksum) do
       %__MODULE__{
+        file_type: :video,
         file_url: response["fileUrl"],
         file_id: response["fileId"],
         checksum: checksum,
@@ -177,6 +183,7 @@ defmodule ZcaEx.Model.Attachment do
     @moduledoc "Response for an uploaded file (non-image, non-video)"
 
     @type t :: %__MODULE__{
+            file_type: :file,
             file_url: String.t() | nil,
             file_id: String.t(),
             checksum: String.t(),
@@ -195,12 +202,14 @@ defmodule ZcaEx.Model.Attachment do
       :file_name,
       :finished,
       :client_file_id,
-      :chunk_id
+      :chunk_id,
+      file_type: :file
     ]
 
     @spec from_response(map(), map(), String.t()) :: t()
     def from_response(response, file_data, checksum) do
       %__MODULE__{
+        file_type: :file,
         file_url: response["fileUrl"],
         file_id: response["fileId"],
         checksum: checksum,

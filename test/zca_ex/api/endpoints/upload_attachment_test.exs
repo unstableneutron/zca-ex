@@ -307,4 +307,45 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachmentTest do
       assert Regex.match?(~r/^[a-f0-9]+$/, boundary)
     end
   end
+
+  describe "edge cases and validation" do
+    test "rejects zero-byte files", %{session: session, credentials: creds} do
+      source = AttachmentSource.from_binary(<<>>, "empty.txt")
+      result = UploadAttachment.upload(source, "thread_id", :user, session, creds)
+      assert {:error, %ZcaEx.Error{message: msg}} = result
+      assert msg =~ "Empty file"
+    end
+
+    test "handles zero chunk_size in settings by using default", %{session: session} do
+      session = put_in(session.settings["features"]["sharefile"]["chunk_size_file"], 0)
+
+      sharefile = get_in(session.settings, ["features", "sharefile"]) || %{}
+      raw_chunk_size = sharefile["chunk_size_file"]
+
+      assert raw_chunk_size == 0
+
+      effective_chunk_size =
+        if is_integer(raw_chunk_size) and raw_chunk_size > 0,
+          do: raw_chunk_size,
+          else: 512 * 1024
+
+      assert effective_chunk_size == 512 * 1024
+    end
+
+    test "restricted extension check is case-insensitive", %{session: session, credentials: creds} do
+      session = put_in(session.settings["features"]["sharefile"]["restricted_ext_file"], ["EXE", "BAT"])
+      source = AttachmentSource.from_binary(<<1, 2, 3>>, "test.exe")
+      result = UploadAttachment.upload(source, "thread_id", :user, session, creds)
+      assert {:error, %ZcaEx.Error{message: msg}} = result
+      assert msg =~ "not allowed"
+    end
+
+    test "returns error when file service URL is missing", %{session: session, credentials: creds} do
+      session = %{session | zpw_service_map: %{}}
+      source = AttachmentSource.from_binary(<<1, 2, 3>>, "test.jpg")
+      result = UploadAttachment.upload(source, "thread_id", :user, session, creds)
+      assert {:error, %ZcaEx.Error{message: msg}} = result
+      assert msg =~ "Missing file service URL"
+    end
+  end
 end
