@@ -679,12 +679,25 @@ defmodule ZcaEx.WS.Connection do
     if is_map(data) do
       uid = state.session.uid
 
-      if is_undo_message?(data) do
-        model = Undo.from_ws_data(data, uid, thread_type)
-        Dispatcher.dispatch(state.account_id, :undo, thread_type, model)
-      else
-        model = Message.from_ws_data(data, uid, thread_type)
-        Dispatcher.dispatch(state.account_id, :message, thread_type, model)
+      cond do
+        # Single message object (has msgId directly)
+        is_binary(data["msgId"]) ->
+          dispatch_one_message(data, uid, thread_type, state.account_id)
+
+        # Batch wrapper format (has msgs/groupMsgs array) - used for realtime pushes too
+        is_list(data["msgs"]) or is_list(data["groupMsgs"]) ->
+          raw_msgs =
+            case thread_type do
+              :group -> Map.get(data, "groupMsgs", [])
+              _ -> Map.get(data, "msgs", [])
+            end
+
+          Enum.each(raw_msgs, fn raw ->
+            if is_map(raw), do: dispatch_one_message(raw, uid, thread_type, state.account_id)
+          end)
+
+        true ->
+          Logger.warning("Dropping :message event: unexpected data shape keys=#{inspect(Map.keys(data))}")
       end
     else
       Logger.warning("Dropping :message event: data not a map after decryption")
@@ -809,6 +822,16 @@ defmodule ZcaEx.WS.Connection do
     end
 
     state
+  end
+
+  defp dispatch_one_message(raw, uid, thread_type, account_id) do
+    if is_undo_message?(raw) do
+      model = Undo.from_ws_data(raw, uid, thread_type)
+      Dispatcher.dispatch(account_id, :undo, thread_type, model)
+    else
+      model = Message.from_ws_data(raw, uid, thread_type)
+      Dispatcher.dispatch(account_id, :message, thread_type, model)
+    end
   end
 
   defp is_undo_message?(%{"content" => %{"deleteMsg" => _}}), do: true
