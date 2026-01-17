@@ -38,6 +38,6 @@ defmodule ZcaEx.Account.Supervisor do
       {Runtime, account_id: account_id, runtime: runtime_opts}
     ]
 
-    Supervisor.init(children, strategy: :rest_for_one)
+    Supervisor.init(children, strategy: :one_for_all)
   end
 end

@@ -397,7 +397,7 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachment do
           {"chunkContent", chunk_data, filename: params.fileName, content_type: "application/octet-stream"}
         ]
 
-        case AccountClient.post_multipart(creds.imei, url, parts, creds.user_agent) do
+        case AccountClient.post_multipart(session.uid, url, parts, creds.user_agent) do
           {:ok, response} ->
             Response.parse_unencrypted(response)
 
