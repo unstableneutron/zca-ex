@@ -150,3 +150,15 @@ Task ID: 105
 - Updated connection lifecycle diagram to show Model.from_ws_data/3 step
 - Files changed: docs/EVENTS.md, docs/WEBSOCKET.md
 ---
+
+## 2026-01-17 - Add integration tests for event dispatching
+Thread: Thread: T-019bcaed-aa4b-710c-8adf-74255dada36f
+Task ID: 106
+- Created comprehensive integration tests for event dispatching with models
+- Tests verify model struct creation: Message, Undo, Typing, Reaction, SeenMessage, DeliveredMessage
+- Tests validate thread_type determination: typing (act field), reaction (reacts/reactGroups split)
+- Tests verify seen/delivered detection logic (seenUids, idTo for seen; deliveredUids for delivered)
+- Tests confirm events can be subscribed to and received via Events pub/sub
+- 22 new tests covering all model types and dispatching scenarios
+- Files: test/zca_ex/ws/connection_dispatch_test.exs
+---
