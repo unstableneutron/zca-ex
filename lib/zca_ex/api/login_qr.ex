@@ -567,8 +567,11 @@ defmodule ZcaEx.Api.LoginQR do
 
     case Client.get(url, headers) do
       {:ok, %{status: 200, body: body}} ->
+        Logger.debug("Userinfo response body: #{body}")
         case Jason.decode(body) do
-          {:ok, %{"error_code" => 0} = response} -> {:ok, response}
+          {:ok, %{"error_code" => 0} = response} ->
+            Logger.debug("Parsed userinfo response: #{inspect(response)}")
+            {:ok, response}
           {:ok, %{"error_code" => code, "error_message" => msg}} -> {:error, Error.api(code, msg)}
           {:error, _} -> {:error, Error.api(nil, "Failed to decode user info")}
         end
