@@ -63,3 +63,15 @@ Task ID: 95
 - 12 tests covering user/group undo, self-sent, content handling, optional fields
 - Files: lib/zca_ex/model/undo.ex, test/zca_ex/model/undo_test.exs
 ---
+
+## 2026-01-17 - Create SeenMessage model
+Thread: Thread: T-019bcadc-e7e5-72e3-9797-eaf1bea0841c
+Task ID: 98
+- Created SeenMessage model struct for seen/read receipt events
+- Fields: msg_id, real_msg_id, id_to, group_id, thread_id, thread_type, is_self, seen_uids
+- Two from_ws_data/3 clauses: :user (is_self always false) and :group (is_self true if uid in seen_uids)
+- User seen: thread_id = idTo, has real_msg_id
+- Group seen: thread_id = groupId, has seen_uids list
+- 8 tests covering user/group seen, is_self behavior, missing fields
+- Files: lib/zca_ex/model/seen_message.ex, test/zca_ex/model/seen_message_test.exs
+---
