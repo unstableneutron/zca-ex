@@ -23,6 +23,40 @@ defmodule ZcaEx do
     )
   end
 
+  @doc """
+  Ensures an account's supervised tree is started. Idempotent - returns existing pid if already started.
+
+  Options:
+    - :session - Optional pre-existing session (e.g., from QR login). If provided, skips login.
+    
+  Returns {:ok, pid} where pid is the Account.Supervisor pid.
+  """
+  @spec ensure_account_started(term(), Credentials.t(), keyword()) :: {:ok, pid()} | {:error, term()}
+  def ensure_account_started(account_id, %Credentials{} = credentials, opts \\ []) do
+    session = Keyword.get(opts, :session)
+
+    child_opts = [
+      account_id: account_id,
+      credentials: credentials,
+      session: session
+    ]
+
+    case DynamicSupervisor.start_child(ZcaEx.AccountSupervisor, {Supervisor, child_opts}) do
+      {:ok, pid} -> {:ok, pid}
+      {:error, {:already_started, pid}} -> {:ok, pid}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc "Returns the pid of the account supervisor if started, nil otherwise"
+  @spec account_started?(term()) :: pid() | nil
+  def account_started?(account_id) do
+    case Registry.lookup(ZcaEx.Registry, {:account_sup, account_id}) do
+      [{pid, _}] -> pid
+      [] -> nil
+    end
+  end
+
   @doc "Remove an account"
   @spec remove_account(String.t()) :: :ok | {:error, :not_found}
   def remove_account(account_id) do

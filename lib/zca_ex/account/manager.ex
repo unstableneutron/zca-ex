@@ -22,17 +22,31 @@ defmodule ZcaEx.Account.Manager do
   def get_session(account_id), do: GenServer.call(via(account_id), :get_session)
   def get_state(account_id), do: GenServer.call(via(account_id), :get_state)
 
+  @doc "Inject or replace the session for an account"
+  def put_session(account_id, %Session{} = session) do
+    GenServer.call(via(account_id), {:put_session, session})
+  end
+
   @impl true
   def init(opts) do
     account_id = Keyword.fetch!(opts, :account_id)
     credentials = Keyword.fetch!(opts, :credentials)
+    session = Keyword.get(opts, :session)
 
-    {:ok,
-     %__MODULE__{
-       account_id: account_id,
-       credentials: credentials,
-       state: :initialized
-     }}
+    base = %__MODULE__{
+      account_id: account_id,
+      credentials: credentials,
+      state: :initialized
+    }
+
+    state =
+      if session do
+        %{base | session: session, state: :logged_in}
+      else
+        base
+      end
+
+    {:ok, state}
   end
 
   @impl true
@@ -56,6 +70,10 @@ defmodule ZcaEx.Account.Manager do
 
   def handle_call(:get_state, _from, state) do
     {:reply, state.state, state}
+  end
+
+  def handle_call({:put_session, session}, _from, state) do
+    {:reply, :ok, %{state | session: session, state: :logged_in}}
   end
 
   defp do_login(state) do

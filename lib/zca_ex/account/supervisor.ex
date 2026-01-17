@@ -29,10 +29,11 @@ defmodule ZcaEx.Account.Supervisor do
     account_id = Keyword.fetch!(opts, :account_id)
     credentials = Keyword.fetch!(opts, :credentials)
     runtime_opts = Keyword.get(opts, :runtime, [])
+    session = Keyword.get(opts, :session)
 
     children = [
       {CookieJar, account_id: account_id, cookies: credentials.cookies},
-      {Manager, account_id: account_id, credentials: credentials},
+      {Manager, account_id: account_id, credentials: credentials, session: session},
       {ZcaEx.WS.Connection, account_id: account_id},
       {Runtime, account_id: account_id, runtime: runtime_opts}
     ]
