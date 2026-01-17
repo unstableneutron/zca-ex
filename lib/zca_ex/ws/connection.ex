@@ -98,16 +98,14 @@ defmodule ZcaEx.WS.Connection do
   @spec request_old_messages(String.t(), :user | :group, String.t() | integer() | nil) ::
           :ok | {:error, term()}
   def request_old_messages(account_id, thread_type, last_id \\ nil) do
-    frame = Frame.old_messages_frame(thread_type, last_id)
-    send_frame(account_id, frame)
+    GenServer.call(via(account_id), {:request_old_messages, thread_type, last_id})
   end
 
   @doc "Request old reactions for a thread type"
   @spec request_old_reactions(String.t(), :user | :group, String.t() | integer() | nil) ::
           :ok | {:error, term()}
   def request_old_reactions(account_id, thread_type, last_id \\ nil) do
-    frame = Frame.old_reactions_frame(thread_type, last_id)
-    send_frame(account_id, frame)
+    GenServer.call(via(account_id), {:request_old_reactions, thread_type, last_id})
   end
 
   @doc "Get the current connection status"
@@ -195,6 +193,42 @@ defmodule ZcaEx.WS.Connection do
     }
 
     {:reply, {:ok, status}, state}
+  end
+
+  def handle_call({:request_old_messages, thread_type, last_id}, _from, %{state: :ready} = state) do
+    req_id = "req_#{state.request_id}"
+    frame = Frame.old_messages_frame(thread_type, last_id, req_id)
+
+    case do_send_frame(state, frame) do
+      {:ok, new_state} ->
+        Telemetry.ws_message_sent(state.account_id, byte_size(frame))
+        {:reply, :ok, %{new_state | request_id: state.request_id + 1}}
+
+      {:error, reason, new_state} ->
+        {:reply, {:error, reason}, new_state}
+    end
+  end
+
+  def handle_call({:request_old_messages, _thread_type, _last_id}, _from, state) do
+    {:reply, {:error, :not_ready}, state}
+  end
+
+  def handle_call({:request_old_reactions, thread_type, last_id}, _from, %{state: :ready} = state) do
+    req_id = "req_#{state.request_id}"
+    frame = Frame.old_reactions_frame(thread_type, last_id, req_id)
+
+    case do_send_frame(state, frame) do
+      {:ok, new_state} ->
+        Telemetry.ws_message_sent(state.account_id, byte_size(frame))
+        {:reply, :ok, %{new_state | request_id: state.request_id + 1}}
+
+      {:error, reason, new_state} ->
+        {:reply, {:error, reason}, new_state}
+    end
+  end
+
+  def handle_call({:request_old_reactions, _thread_type, _last_id}, _from, state) do
+    {:reply, {:error, :not_ready}, state}
   end
 
   @impl true

@@ -82,35 +82,35 @@ defmodule ZcaEx.WS.FrameTest do
     end
   end
 
-  describe "old_messages_frame/2" do
+  describe "old_messages_frame/3" do
     test "builds frame for user thread with cmd=510" do
-      frame = Frame.old_messages_frame(:user, "12345")
+      frame = Frame.old_messages_frame(:user, "12345", "req_1")
 
       assert {:ok, {1, 510, 1}, data} = Frame.decode(frame)
-      assert data == %{"first" => true, "lastId" => "12345", "preIds" => []}
+      assert data == %{"first" => true, "lastId" => "12345", "preIds" => [], "req_id" => "req_1"}
     end
 
     test "builds frame for group thread with cmd=511" do
-      frame = Frame.old_messages_frame(:group, 67890)
+      frame = Frame.old_messages_frame(:group, 67890, "req_2")
 
       assert {:ok, {1, 511, 1}, data} = Frame.decode(frame)
-      assert data == %{"first" => true, "lastId" => 67890, "preIds" => []}
+      assert data == %{"first" => true, "lastId" => 67890, "preIds" => [], "req_id" => "req_2"}
     end
   end
 
-  describe "old_reactions_frame/2" do
+  describe "old_reactions_frame/3" do
     test "builds frame for user thread with cmd=610" do
-      frame = Frame.old_reactions_frame(:user, "abc")
+      frame = Frame.old_reactions_frame(:user, "abc", "req_3")
 
       assert {:ok, {1, 610, 1}, data} = Frame.decode(frame)
-      assert data == %{"first" => true, "lastId" => "abc", "preIds" => []}
+      assert data == %{"first" => true, "lastId" => "abc", "preIds" => [], "req_id" => "req_3"}
     end
 
     test "builds frame for group thread with cmd=611" do
-      frame = Frame.old_reactions_frame(:group, "xyz")
+      frame = Frame.old_reactions_frame(:group, "xyz", "req_4")
 
       assert {:ok, {1, 611, 1}, data} = Frame.decode(frame)
-      assert data == %{"first" => true, "lastId" => "xyz", "preIds" => []}
+      assert data == %{"first" => true, "lastId" => "xyz", "preIds" => [], "req_id" => "req_4"}
     end
   end
 end

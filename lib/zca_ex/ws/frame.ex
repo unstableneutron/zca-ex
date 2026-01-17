@@ -67,11 +67,12 @@ defmodule ZcaEx.WS.Frame do
   - thread_type :user -> cmd=510
   - thread_type :group -> cmd=511
   - subCmd=1
+  - req_id is required for server to respond
   """
-  @spec old_messages_frame(:user | :group, String.t() | integer()) :: binary()
-  def old_messages_frame(thread_type, last_id) do
+  @spec old_messages_frame(:user | :group, String.t() | integer(), String.t()) :: binary()
+  def old_messages_frame(thread_type, last_id, req_id) do
     cmd = thread_type_to_messages_cmd(thread_type)
-    data = %{"first" => true, "lastId" => last_id, "preIds" => []}
+    data = %{"first" => true, "lastId" => last_id, "preIds" => [], "req_id" => req_id}
     encode(1, cmd, 1, data)
   end
 
@@ -81,11 +82,12 @@ defmodule ZcaEx.WS.Frame do
   - thread_type :user -> cmd=610
   - thread_type :group -> cmd=611
   - subCmd=1
+  - req_id is required for server to respond
   """
-  @spec old_reactions_frame(:user | :group, String.t() | integer()) :: binary()
-  def old_reactions_frame(thread_type, last_id) do
+  @spec old_reactions_frame(:user | :group, String.t() | integer(), String.t()) :: binary()
+  def old_reactions_frame(thread_type, last_id, req_id) do
     cmd = thread_type_to_reactions_cmd(thread_type)
-    data = %{"first" => true, "lastId" => last_id, "preIds" => []}
+    data = %{"first" => true, "lastId" => last_id, "preIds" => [], "req_id" => req_id}
     encode(1, cmd, 1, data)
   end
 
