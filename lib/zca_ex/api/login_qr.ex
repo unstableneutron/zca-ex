@@ -19,6 +19,7 @@ defmodule ZcaEx.Api.LoginQR do
 
   require Logger
 
+  alias ZcaEx.Api.Endpoints.GetLoginInfo
   alias ZcaEx.Api.LoginQR.Events
   alias ZcaEx.CookieJar.Jar, as: CookieJar
   alias ZcaEx.Error
@@ -279,8 +280,10 @@ defmodule ZcaEx.Api.LoginQR do
 
   defp finalize_login(state) do
     with {:ok, _} <- check_session(state),
+         {:ok, login_info} <- GetLoginInfo.call(state.cookie_jar_id, generate_imei(), state.user_agent),
          {:ok, user_info} <- get_user_info(state),
-         {:ok, uid, name, avatar} <- extract_user_info(user_info, state) do
+         {:ok, name, avatar} <- extract_user_info(user_info) do
+      uid = to_string(login_info["uid"] || "")
       cookies = CookieJar.export(state.cookie_jar_id)
 
       event =
@@ -288,7 +291,8 @@ defmodule ZcaEx.Api.LoginQR do
           cookies,
           generate_imei(),
           state.user_agent,
-          %{uid: uid, name: name, avatar: avatar}
+          %{uid: uid, name: name, avatar: avatar},
+          login_info
         )
 
       send_event(state, event)
@@ -296,28 +300,24 @@ defmodule ZcaEx.Api.LoginQR do
     end
   end
 
-  defp extract_user_info(user_info, state) do
-    # Try to get uid from response first, then fallback to zpw_sek cookie
-    uid_from_response = get_in(user_info, ["data", "uid"])
-    uid = if uid_from_response, do: to_string(uid_from_response), else: extract_uid_from_cookies(state)
-
+  defp extract_user_info(user_info) do
     case user_info do
       %{"data" => %{"info" => %{"name" => name, "avatar" => avatar}}}
       when is_binary(name) and is_binary(avatar) ->
-        {:ok, uid, name, avatar}
+        {:ok, name, avatar}
 
       %{"data" => %{"info" => info}} when is_map(info) ->
-        {:ok, uid, info["name"] || "", info["avatar"] || ""}
+        {:ok, info["name"] || "", info["avatar"] || ""}
 
       # Handle case where data has logged/session_chat_valid but no info
       %{"data" => %{"logged" => true}} ->
-        {:ok, uid, "", ""}
+        {:ok, "", ""}
 
       # Account requires password confirmation - but we still have session cookies
       # Try to proceed anyway and let the caller decide
       %{"data" => %{"logged" => false, "require_confirm_pwd" => true}} ->
         Logger.warning("userinfo returned require_confirm_pwd=true, attempting to proceed anyway")
-        {:ok, uid, "", ""}
+        {:ok, "", ""}
 
       %{"data" => %{"logged" => false}} ->
         {:error, Error.auth("Login failed - session not established")}
@@ -325,36 +325,6 @@ defmodule ZcaEx.Api.LoginQR do
       _ ->
         Logger.warning("Unexpected user info structure: #{inspect(user_info)}")
         {:error, Error.api(nil, "Invalid user info response structure")}
-    end
-  end
-
-  # Extract uid from zpw_sek cookie value
-  # Format: {random}.{uid}.{version}.{token}
-  # Example: 9aYT.430313233.a0.QgOHdvH0oHQ5...
-  defp extract_uid_from_cookies(state) do
-    cookies = CookieJar.export(state.cookie_jar_id)
-
-    zpw_sek =
-      Enum.find_value(cookies, fn
-        %{"name" => "zpw_sek", "value" => value} -> value
-        _ -> nil
-      end)
-
-    case zpw_sek do
-      nil ->
-        Logger.warning("zpw_sek cookie not found")
-        ""
-
-      value ->
-        case String.split(value, ".") do
-          [_random, uid, _version | _rest] when byte_size(uid) > 0 ->
-            Logger.debug("Extracted uid from zpw_sek: #{uid}")
-            uid
-
-          _ ->
-            Logger.warning("Could not parse uid from zpw_sek: #{value}")
-            ""
-        end
     end
   end
 

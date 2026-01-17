@@ -33,7 +33,8 @@ defmodule ZcaEx.Api.LoginQR.Events do
           cookies: [map()],
           imei: String.t(),
           user_agent: String.t(),
-          user_info: %{uid: String.t(), name: String.t(), avatar: String.t()}
+          user_info: %{uid: String.t(), name: String.t(), avatar: String.t()},
+          login_info: map()
         }
 
   @type login_error :: %{
@@ -75,14 +76,15 @@ defmodule ZcaEx.Api.LoginQR.Events do
     }
   end
 
-  @spec login_complete([map()], String.t(), String.t(), map()) :: login_complete()
-  def login_complete(cookies, imei, user_agent, user_info) do
+  @spec login_complete([map()], String.t(), String.t(), map(), map()) :: login_complete()
+  def login_complete(cookies, imei, user_agent, user_info, login_info) do
     %{
       type: :login_complete,
       cookies: cookies,
       imei: imei,
       user_agent: user_agent,
-      user_info: user_info
+      user_info: user_info,
+      login_info: login_info
     }
   end
 

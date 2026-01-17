@@ -4,8 +4,9 @@ defmodule ZcaEx.Account.Manager do
   require Logger
 
   alias ZcaEx.Account.Session
+  alias ZcaEx.Api.Endpoints.GetLoginInfo
   alias ZcaEx.{CookieJar, HTTP}
-  alias ZcaEx.Crypto.{AesCbc, ParamsEncryptor, SignKey}
+  alias ZcaEx.Crypto.SignKey
   alias ZcaEx.HTTP.AccountClient
 
   defstruct [:account_id, :credentials, :session, state: :initialized]
@@ -102,69 +103,14 @@ defmodule ZcaEx.Account.Manager do
   end
 
   defp fetch_login_info(account_id, creds) do
-    encryptor = ParamsEncryptor.new(creds.api_type, creds.imei, System.system_time(:millisecond))
-    enc_params = ParamsEncryptor.get_params(encryptor)
-    enc_key = ParamsEncryptor.get_encrypt_key(encryptor)
-
-    data = %{
-      computer_name: "Web",
-      imei: creds.imei,
-      language: creds.language,
-      ts: System.system_time(:millisecond)
-    }
-
-    encrypted_data = ParamsEncryptor.encode_aes(enc_key, Jason.encode!(data), :base64, false)
-
-    # Sign params should match JS: {zcid, zcid_ext, enc_ver, params, type, client_version}
-    # Do NOT include computer_name, imei, language, ts - those are in the encrypted data
-    sign_params = %{
-      zcid: enc_params.zcid,
-      zcid_ext: enc_params.zcid_ext,
-      enc_ver: enc_params.enc_ver,
-      params: encrypted_data,
-      type: creds.api_type,
-      client_version: creds.api_version
-    }
-
-    params =
-      sign_params
-      |> Map.put(:signkey, SignKey.generate("getlogininfo", sign_params))
-      |> Map.put(:nretry, 0)
-
-    url = HTTP.build_url("https://wpa.chat.zalo.me/api/login/getLoginInfo", params)
-
-    case AccountClient.get(account_id, url, creds.user_agent) do
-      {:ok, %{status: 200, body: body}} ->
-        resp = Jason.decode!(body)
-        Logger.debug("getLoginInfo response: #{inspect(resp)}")
-
-        if resp["error_code"] == 0 do
-          decrypted = AesCbc.decrypt_utf8_key(enc_key, resp["data"], :base64)
-          Logger.debug("Decrypted login info: #{inspect(decrypted)}")
-          login_data = Jason.decode!(decrypted)
-          
-          # Check for inner error code (e.g., 102 = session expired)
-          case login_data do
-            %{"error_code" => 0, "data" => data} when is_map(data) ->
-              {:ok, data}
-            %{"error_code" => code, "error_message" => msg} when code != 0 ->
-              {:error, "Login failed (#{code}): #{msg}"}
-            # Direct data without wrapper (normal response)
-            %{"uid" => _} = data ->
-              {:ok, data}
-            _ ->
-              {:ok, login_data}
-          end
-        else
-          {:error, resp["error_message"] || "Login failed"}
-        end
-
-      {:ok, %{status: status}} ->
-        {:error, "HTTP #{status}"}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    GetLoginInfo.call(
+      account_id,
+      creds.imei,
+      creds.user_agent,
+      api_type: creds.api_type,
+      api_version: creds.api_version,
+      language: creds.language
+    )
   end
 
   defp fetch_server_info(account_id, creds) do
