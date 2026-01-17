@@ -86,3 +86,11 @@ Task ID: 99
 - 11 tests covering user/group delivery, is_self behavior, empty lists, missing fields
 - Files: lib/zca_ex/model/delivered_message.ex, test/zca_ex/model/delivered_message_test.exs
 ---
+
+## 2026-01-17 - Add :undo event type to Router and Topic
+Thread: Thread: T-019bcae0-4632-7100-b495-1650e8316b95
+Task ID: 100
+- Added :undo to event_type union in Router (note: :undo already existed in Topic.event_types)
+- No new route added - undo events come via :message route and are detected by payload content
+- Files changed: lib/zca_ex/ws/router.ex
+---

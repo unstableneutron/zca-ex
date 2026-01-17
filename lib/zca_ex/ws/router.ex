@@ -5,6 +5,7 @@ defmodule ZcaEx.WS.Router do
           :cipher_key
           | :ping
           | :message
+          | :undo
           | :control
           | :reaction
           | :old_reactions
