@@ -113,3 +113,14 @@ Task ID: 102
 - Typing events now dispatched with thread_type using Dispatcher.dispatch/4
 - Files changed: lib/zca_ex/ws/connection.ex
 ---
+
+## 2026-01-17 - Split :reaction events by thread_type
+Thread: Thread: T-019bcae4-e840-742e-b93f-6fb4df3e5a0c
+Task ID: 103
+- Added dispatch_event clause for :reaction that splits user and group reactions
+- Extracts 'reacts' array for user reactions (dispatched with :user thread_type)
+- Extracts 'reactGroups' array for group reactions (dispatched with :group thread_type)
+- Each reaction is wrapped in event_payload with individual react data
+- May emit multiple events from single cmd 612 payload (following zca-js pattern)
+- Files changed: lib/zca_ex/ws/connection.ex
+---

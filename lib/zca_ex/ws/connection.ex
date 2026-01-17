@@ -589,6 +589,33 @@ defmodule ZcaEx.WS.Connection do
     state
   end
 
+  defp dispatch_event(:reaction, _thread_type, payload, state) do
+    processed_payload =
+      if Router.needs_decryption?(:reaction) do
+        decrypt_event_data(payload, state.cipher_key)
+      else
+        payload
+      end
+
+    data = Map.get(processed_payload, "data", %{})
+
+    reacts = Map.get(data, "reacts", [])
+
+    Enum.each(reacts, fn react ->
+      event_payload = Map.put(processed_payload, "data", react)
+      Dispatcher.dispatch(state.account_id, :reaction, :user, event_payload)
+    end)
+
+    react_groups = Map.get(data, "reactGroups", [])
+
+    Enum.each(react_groups, fn react_group ->
+      event_payload = Map.put(processed_payload, "data", react_group)
+      Dispatcher.dispatch(state.account_id, :reaction, :group, event_payload)
+    end)
+
+    state
+  end
+
   defp dispatch_event(event_type, thread_type, payload, state) do
     processed_payload =
       if Router.needs_decryption?(event_type) do
