@@ -79,8 +79,7 @@ defmodule ZcaEx.WS.RouterTest do
       assert Router.needs_decryption?(:old_reactions) == true
       assert Router.needs_decryption?(:old_messages) == true
       assert Router.needs_decryption?(:typing) == true
-      assert Router.needs_decryption?(:delivered) == true
-      assert Router.needs_decryption?(:seen) == true
+      assert Router.needs_decryption?(:seen_delivered) == true
     end
 
     test "returns false for events not requiring decryption" do

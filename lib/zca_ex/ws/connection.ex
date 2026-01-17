@@ -14,6 +14,7 @@ defmodule ZcaEx.WS.Connection do
   alias ZcaEx.Crypto.AesGcm
   alias ZcaEx.Error
   alias ZcaEx.Events.Dispatcher
+  alias ZcaEx.Model.{DeliveredMessage, Message, Reaction, SeenMessage, Typing, Undo}
   alias ZcaEx.Telemetry
   alias ZcaEx.WS.{ControlParser, Frame, RetryPolicy, Router}
 
@@ -584,8 +585,12 @@ defmodule ZcaEx.WS.Connection do
         payload
       end
 
+    data = Map.get(processed_payload, "data", %{})
+    act = Map.get(data, "act", "typing")
     thread_type = typing_thread_type(processed_payload)
-    Dispatcher.dispatch(state.account_id, :typing, thread_type, processed_payload)
+
+    model = Typing.from_ws_data(data, act)
+    Dispatcher.dispatch(state.account_id, :typing, thread_type, model)
     state
   end
 
@@ -598,20 +603,65 @@ defmodule ZcaEx.WS.Connection do
       end
 
     data = Map.get(processed_payload, "data", %{})
+    uid = state.session.uid
 
     reacts = Map.get(data, "reacts", [])
 
     Enum.each(reacts, fn react ->
-      event_payload = Map.put(processed_payload, "data", react)
-      Dispatcher.dispatch(state.account_id, :reaction, :user, event_payload)
+      model = Reaction.from_ws_data(react, uid, :user)
+      Dispatcher.dispatch(state.account_id, :reaction, :user, model)
     end)
 
     react_groups = Map.get(data, "reactGroups", [])
 
     Enum.each(react_groups, fn react_group ->
-      event_payload = Map.put(processed_payload, "data", react_group)
-      Dispatcher.dispatch(state.account_id, :reaction, :group, event_payload)
+      model = Reaction.from_ws_data(react_group, uid, :group)
+      Dispatcher.dispatch(state.account_id, :reaction, :group, model)
     end)
+
+    state
+  end
+
+  defp dispatch_event(:message, thread_type, payload, state) do
+    processed_payload =
+      if Router.needs_decryption?(:message) do
+        decrypt_event_data(payload, state.cipher_key)
+      else
+        payload
+      end
+
+    data = Map.get(processed_payload, "data", %{})
+    uid = state.session.uid
+
+    if is_undo_message?(data) do
+      model = Undo.from_ws_data(data, uid, thread_type)
+      Dispatcher.dispatch(state.account_id, :undo, thread_type, model)
+    else
+      model = Message.from_ws_data(data, uid, thread_type)
+      Dispatcher.dispatch(state.account_id, :message, thread_type, model)
+    end
+
+    state
+  end
+
+  defp dispatch_event(:seen_delivered, thread_type, payload, state) do
+    processed_payload =
+      if Router.needs_decryption?(:seen_delivered) do
+        decrypt_event_data(payload, state.cipher_key)
+      else
+        payload
+      end
+
+    data = Map.get(processed_payload, "data", %{})
+    uid = state.session.uid
+
+    if is_seen_event?(data) do
+      model = SeenMessage.from_ws_data(data, uid, thread_type)
+      Dispatcher.dispatch(state.account_id, :seen, thread_type, model)
+    else
+      model = DeliveredMessage.from_ws_data(data, uid, thread_type)
+      Dispatcher.dispatch(state.account_id, :delivered, thread_type, model)
+    end
 
     state
   end
@@ -632,6 +682,21 @@ defmodule ZcaEx.WS.Connection do
 
     state
   end
+
+  defp is_undo_message?(%{"content" => %{"deleteMsg" => _}}), do: true
+
+  defp is_undo_message?(%{"content" => content}) when is_binary(content) do
+    case Jason.decode(content) do
+      {:ok, %{"deleteMsg" => _}} -> true
+      _ -> false
+    end
+  end
+
+  defp is_undo_message?(_), do: false
+
+  defp is_seen_event?(%{"seenUids" => uids}) when is_list(uids) and length(uids) > 0, do: true
+  defp is_seen_event?(%{"idTo" => id_to}) when is_binary(id_to), do: true
+  defp is_seen_event?(_), do: false
 
   defp typing_thread_type(%{"data" => %{"act" => "gtyping"}}), do: :group
   defp typing_thread_type(%{"data" => %{"act" => _}}), do: :user

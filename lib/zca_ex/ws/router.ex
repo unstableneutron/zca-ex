@@ -92,8 +92,7 @@ defmodule ZcaEx.WS.Router do
     :old_reactions,
     :old_messages,
     :typing,
-    :delivered,
-    :seen
+    :seen_delivered
   ])
 
   @doc """

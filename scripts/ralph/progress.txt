@@ -124,3 +124,17 @@ Task ID: 103
 - May emit multiple events from single cmd 612 payload (following zca-js pattern)
 - Files changed: lib/zca_ex/ws/connection.ex
 ---
+
+## 2026-01-17 - Wire models in WS.Connection dispatcher
+Thread: Thread: T-019bcae7-5269-729f-b794-7b2292749b66
+Task ID: 104
+- Updated WS.Connection dispatcher to transform raw payloads into model structs before dispatching
+- Added model aliases: DeliveredMessage, Message, Reaction, SeenMessage, Typing, Undo
+- :typing events: transform with Typing.from_ws_data(data, act)
+- :reaction events: transform with Reaction.from_ws_data(react, uid, thread_type) for each react
+- :message events: detect undo via is_undo_message?/1 helper, dispatch as :undo or :message
+- :seen_delivered events: detect seen via is_seen_event?/1 helper, dispatch as :seen or :delivered
+- Added helpers: is_undo_message?/1, is_seen_event?/1
+- Updated @decrypted_events in router.ex to use :seen_delivered (single route, split at dispatch)
+- Files changed: lib/zca_ex/ws/connection.ex, lib/zca_ex/ws/router.ex
+---
