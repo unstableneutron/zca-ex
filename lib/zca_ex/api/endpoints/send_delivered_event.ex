@@ -125,7 +125,12 @@ defmodule ZcaEx.Api.Endpoints.SendDeliveredEvent do
   end
 
   defp get_optional_field(msg, key, default) do
-    if Map.has_key?(msg, key), do: 0, else: default
+    case Map.get(msg, key) do
+      nil -> default
+      0 -> 0
+      val when is_integer(val) -> val
+      _ -> default
+    end
   end
 
   defp parse_ts(nil), do: -1

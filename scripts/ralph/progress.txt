@@ -1,2 +1,22 @@
 # Ralph Progress Log
-Status: Ready for new feature
+Started: 2026-01-17
+Feature: ZcaEx Event System - Full zca-js Parity
+Parent Task: 92
+
+## Codebase Patterns
+- Use Librarian tool to check zca-js source at github.com/RFS-ADRENO/zca-js when comparing implementations
+- Models use from_ws_data/3 pattern for parsing WebSocket payloads
+- Models normalize uid_from/id_to (convert "0" to actual uid)
+- Tests use Mox for HTTP client (ZcaEx.HTTP.ClientMock)
+- Return {:ok, value} | {:error, ZcaEx.Error.t()} for fallible operations
+
+---
+
+## 2026-01-17 - Fix SendDeliveredEvent get_optional_field bug
+Thread: Thread: T-019bcad3-1bd5-721b-820c-3b6b1f9578ba
+Task ID: 93
+- Fixed get_optional_field function that always returned 0 if key existed
+- Now correctly returns actual integer value, 0 for zero, or default for missing/invalid
+- Copied correct implementation from SendSeenEvent using case/do pattern matching
+- Files changed: lib/zca_ex/api/endpoints/send_delivered_event.ex (lines 127-134)
+---
