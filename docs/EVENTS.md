@@ -52,11 +52,10 @@ Examples:
 | `:typing` | Typing indicator |
 | `:reaction` | Reaction added/removed |
 | `:old_reactions` | Historical reactions loaded |
-| `:seen_delivered` | Read receipt (seen + delivered combined) |
+| `:delivered` | Message delivered to recipient |
+| `:seen` | Message seen by recipient |
 | `:control` | Control events (uploads, group/friend changes) |
 | `:duplicate` | Duplicate connection detected |
-
-> **Note:** Seen and delivered events arrive as a single `:seen_delivered` type, not separate events.
 
 ## Usage
 

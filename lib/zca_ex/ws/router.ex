@@ -11,7 +11,8 @@ defmodule ZcaEx.WS.Router do
           | :old_reactions
           | :old_messages
           | :typing
-          | :seen_delivered
+          | :delivered
+          | :seen
           | :duplicate
           | :unknown
 
@@ -91,14 +92,15 @@ defmodule ZcaEx.WS.Router do
     :old_reactions,
     :old_messages,
     :typing,
-    :seen_delivered
+    :delivered,
+    :seen
   ])
 
   @doc """
   Check if this event type requires AES-GCM decryption.
 
   Events that need decryption are those that call decodeEventData in the JS implementation:
-  :message, :reaction, :old_reactions, :old_messages, :typing, :seen_delivered
+  :message, :reaction, :old_reactions, :old_messages, :typing, :delivered, :seen
 
   ## Examples
 

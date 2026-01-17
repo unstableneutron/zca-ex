@@ -94,3 +94,13 @@ Task ID: 100
 - No new route added - undo events come via :message route and are detected by payload content
 - Files changed: lib/zca_ex/ws/router.ex
 ---
+
+## 2026-01-17 - Split :seen_delivered into :delivered and :seen events
+Thread: Thread: T-019bcae1-5562-74db-9606-78fd859aac6e
+Task ID: 101
+- Replaced :seen_delivered with separate :delivered and :seen in Router event_type union
+- Updated @decrypted_events MapSet to include :delivered and :seen
+- Updated EVENTS.md to document separate events and removed combined events note
+- Fixed router_test.exs assertion for needs_decryption?(:seen_delivered) -> :delivered
+- Files changed: lib/zca_ex/ws/router.ex, docs/EVENTS.md, test/zca_ex/ws/router_test.exs
+---
