@@ -58,29 +58,38 @@ ready (can decrypt events)
     │   AES-GCM decrypt (if needed)
     │       │
     │       ▼
-    │   Dispatcher.dispatch/3 → Events.broadcast/2
+    │   Model.from_ws_data/3 → struct conversion
+    │       │
+    │       ▼
+    │   Dispatcher.dispatch/4 → Events.broadcast/2
     │
     └─► Connection lost → RetryPolicy triggers reconnect
 ```
 
 ## Message Routing
 
-| cmd | subCmd | Event Type | Thread Type |
-|-----|--------|------------|-------------|
-| 1 | 1 | `:cipher_key` | — |
-| 2 | 1 | `:ping` | — |
-| 501 | 0 | `:message` | `:user` |
-| 521 | 0 | `:message` | `:group` |
-| 510 | 1 | `:old_messages` | `:user` |
-| 511 | 1 | `:old_messages` | `:group` |
-| 502 | 0 | `:seen_delivered` | `:user` |
-| 522 | 0 | `:seen_delivered` | `:group` |
-| 601 | 0 | `:control` | — |
-| 602 | 0 | `:typing` | — |
-| 610 | 1 | `:old_reactions` | `:user` |
-| 611 | 1 | `:old_reactions` | `:group` |
-| 612 | * | `:reaction` | — |
-| 3000 | 0 | `:duplicate` | — |
+| cmd | subCmd | Event Type | Thread Type | Notes |
+|-----|--------|------------|-------------|-------|
+| 1 | 1 | `:cipher_key` | — | |
+| 2 | 1 | `:ping` | — | |
+| 501 | 0 | `:message` or `:undo` | `:user` | `:undo` if payload has `deleteMsg` |
+| 521 | 0 | `:message` or `:undo` | `:group` | `:undo` if payload has `deleteMsg` |
+| 510 | 1 | `:old_messages` | `:user` | |
+| 511 | 1 | `:old_messages` | `:group` | |
+| 502 | 0 | `:delivered` or `:seen` | `:user` | Split based on payload content |
+| 522 | 0 | `:delivered` or `:seen` | `:group` | Split based on payload content |
+| 601 | 0 | `:control` | — | |
+| 602 | 0 | `:typing` | `:user` or `:group` | Thread type from `data.act` field |
+| 610 | 1 | `:old_reactions` | `:user` | |
+| 611 | 1 | `:old_reactions` | `:group` | |
+| 612 | * | `:reaction` | `:user` or `:group` | Split by `reacts[]` vs `reactGroups[]` |
+| 3000 | 0 | `:duplicate` | — | |
+
+**Event splitting logic:**
+- `:message` → `:undo` when `data.content.deleteMsg` exists
+- `:seen_delivered` → `:seen` when `seenUids` has items or `idTo` present; otherwise `:delivered`
+- `:typing` thread type: `"gtyping"` → `:group`, otherwise `:user`
+- `:reaction` dispatches separately for each react in `reacts[]` (user) and `reactGroups[]` (group)
 
 Control events (cmd=601) contain sub-types parsed by `ControlParser`: uploads, group changes, friend events.
 
