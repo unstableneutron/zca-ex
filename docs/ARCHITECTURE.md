@@ -9,7 +9,7 @@ Application
 ├── Registry (ZcaEx.Registry)
 ├── Events (:pg process group scope)
 └── DynamicSupervisor (ZcaEx.AccountSupervisor)
-    └── Account.Supervisor (per account, rest_for_one)
+    └── Account.Supervisor (per account, one_for_all)
         ├── CookieJar.Jar (ETS-backed cookie storage)
         ├── Account.Manager (GenServer: credentials, session, state)
         ├── WS.Connection (WebSocket lifecycle, starts disconnected)
@@ -23,6 +23,7 @@ Each account runs in isolation. Failures in one account do not affect others.
 | Module | Purpose |
 |--------|---------|
 | `ZcaEx` | Public API facade |
+| `ZcaEx.Account` | Account health management (health checks, recovery, reset) |
 | `Account.Manager` | Per-account state machine (login, session) |
 | `Account.Runtime` | "Always-on" orchestrator (auto-login, auto-connect WS) |
 | `Account.Credentials` | Immutable credential struct (IMEI, cookies, user-agent) |
@@ -147,11 +148,40 @@ ZcaEx.reconnect("acc123")
 ZcaEx.pause_account("acc123")
 ```
 
-## Supervision Strategy: `:rest_for_one`
+## Supervision Strategy: `:one_for_all`
 
-The account supervisor uses `:rest_for_one`, meaning:
+The account supervisor uses `:one_for_all`, meaning if **any** child crashes, **all** children restart together. This ensures a coherent auth/session state:
 
-- If **CookieJar** crashes → everything restarts
-- If **Manager** crashes → WS.Connection and Runtime restart (WS shouldn't run with stale session)
-- If **WS.Connection** crashes → only WS restarts, Runtime stays and can reconnect
-- If **Runtime** crashes → only Runtime restarts, rehydrates state from Manager
+- CookieJar, Manager login/session, and WS auth are tightly coupled
+- If CookieJar dies, keeping Manager/WS alive leaves you in "connected-but-unusable" state
+- Full restart guarantees all processes have consistent state
+
+> **Trade-off**: If WS.Connection crashes frequently (network flaps), it restarts CookieJar/Manager too. This is acceptable if you have higher-level reconnection logic.
+
+## Account Health Management
+
+`ZcaEx.Account` provides APIs for checking and recovering account health:
+
+```elixir
+# Check if all account processes are alive
+case ZcaEx.Account.health("acc123") do
+  :ok -> # All healthy
+  {:error, :not_found} -> # Account not started
+  {:error, :partial_start} -> # Some processes missing (needs reset)
+  {:error, :cookie_jar_dead} -> # CookieJar registered but not alive
+  {:error, :manager_dead} -> # Manager registered but not alive
+  {:error, :ws_dead} -> # WS.Connection registered but not alive
+end
+
+# Idempotent "make it good" - checks health, resets if unhealthy, connects WS
+{:ok, session} = ZcaEx.Account.ensure_connected("acc123", credentials, session)
+
+# Hard restart of entire account subtree
+:ok = ZcaEx.Account.reset("acc123")
+```
+
+### When to Use
+
+- **`health/1`**: Before operations, check if account is in a good state
+- **`ensure_connected/3`**: Recover from failures (e.g., after "session dead" errors during API calls)
+- **`reset/1`**: Force full restart when account is in unknown/bad state

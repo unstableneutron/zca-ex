@@ -11,6 +11,7 @@ An Elixir port of [zca-js](https://github.com/RFS-ADRENO/zca-js) — an unoffici
 - **Phoenix integration** — Built-in Phoenix.PubSub adapter for LiveView applications
 - **Lightweight pub/sub** — `:pg`-based event system with no external dependencies
 - **Automatic reconnection** — Resilient WebSocket with exponential backoff
+- **Health management** — Account health checks and automatic recovery APIs
 
 ## Installation
 
@@ -55,6 +56,15 @@ end
 alias ZcaEx.Api.Endpoints.SendMessage
 credentials = ZcaEx.Account.Manager.get_credentials("my_account")
 SendMessage.send("Hello!", thread_id, :user, session, credentials)
+
+# 7. Check account health / recover from failures
+case ZcaEx.Account.health("my_account") do
+  :ok -> :healthy
+  {:error, reason} -> ZcaEx.Account.reset("my_account")
+end
+
+# Or use ensure_connected for automatic recovery
+{:ok, session} = ZcaEx.Account.ensure_connected("my_account", credentials, session)
 ```
 
 ## Documentation
