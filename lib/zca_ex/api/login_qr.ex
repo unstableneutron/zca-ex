@@ -11,6 +11,7 @@ defmodule ZcaEx.Api.LoginQR do
   6. Wait for confirm (long-poll)
   7. Check session
   8. Get user info
+  9. Fetch login session (getLoginInfo + getServerInfo)
 
   Events are sent to a callback process as the flow progresses.
   """
@@ -19,10 +20,12 @@ defmodule ZcaEx.Api.LoginQR do
 
   require Logger
 
-  alias ZcaEx.Api.Endpoints.GetLoginInfo
+  alias ZcaEx.Account.Session
   alias ZcaEx.Api.LoginQR.Events
   alias ZcaEx.CookieJar.Jar, as: CookieJar
+  alias ZcaEx.Crypto.{AesCbc, ParamsEncryptor, SignKey}
   alias ZcaEx.Error
+  alias ZcaEx.HTTP
   alias ZcaEx.HTTP.Client
 
   @qr_timeout_ms 100_000
@@ -131,7 +134,16 @@ defmodule ZcaEx.Api.LoginQR do
     {:ok, _jar_pid} = CookieJar.start_link(account_id: new_cookie_jar_id)
 
     abort_ref = make_ref()
-    state = %{state | state: :initializing, qr_code: nil, qr_timer: nil, abort_ref: abort_ref, cookie_jar_id: new_cookie_jar_id}
+
+    state = %{
+      state
+      | state: :initializing,
+        qr_code: nil,
+        qr_timer: nil,
+        abort_ref: abort_ref,
+        cookie_jar_id: new_cookie_jar_id
+    }
+
     send(self(), {:run_flow, abort_ref})
     {:noreply, state}
   end
@@ -279,45 +291,216 @@ defmodule ZcaEx.Api.LoginQR do
   end
 
   defp finalize_login(state) do
+    wpa_cookies = CookieJar.get_cookie_string(state.cookie_jar_id, "https://wpa.chat.zalo.me/")
+    Logger.debug("[LoginQR] Cookies for wpa.chat.zalo.me before fetch_session: #{wpa_cookies}")
+
     with {:ok, _} <- check_session(state),
-         {:ok, login_info} <- GetLoginInfo.call(state.cookie_jar_id, generate_imei(), state.user_agent),
          {:ok, user_info} <- get_user_info(state),
-         {:ok, name, avatar} <- extract_user_info(user_info) do
-      uid = to_string(login_info["uid"] || "")
+         {:ok, uid, name, avatar} <- extract_user_info(user_info, state) do
       cookies = CookieJar.export(state.cookie_jar_id)
+      imei = generate_imei()
 
-      event =
-        Events.login_complete(
-          cookies,
-          generate_imei(),
-          state.user_agent,
-          %{uid: uid, name: name, avatar: avatar},
-          login_info
-        )
+      # Fetch session by calling getLoginInfo and getServerInfo with the generated IMEI
+      # This establishes the IMEI with the server so Manager.login() won't fail with error 102
+      case fetch_session(state, cookies, imei) do
+        {:ok, session} ->
+          event =
+            Events.login_complete(
+              cookies,
+              imei,
+              state.user_agent,
+              %{uid: uid, name: name, avatar: avatar},
+              session
+            )
 
-      send_event(state, event)
-      {:ok, %{state | state: :complete}}
+          send_event(state, event)
+          {:ok, %{state | state: :complete}}
+
+        {:error, error} ->
+          {:error, error}
+      end
     end
   end
 
-  defp extract_user_info(user_info) do
+  defp fetch_session(state, cookies, imei) do
+    api_type = 30
+    api_version = 645
+    language = "vi"
+
+    with {:ok, login_info} <-
+           fetch_login_info(state, cookies, imei, api_type, api_version, language),
+         {:ok, server_info} <- fetch_server_info(state, cookies, imei, api_type, api_version) do
+      session = %Session{
+        uid: to_string(login_info["uid"]),
+        secret_key: login_info["zpw_enk"],
+        zpw_service_map: login_info["zpw_service_map_v3"] || %{},
+        ws_endpoints: get_ws_endpoints(server_info),
+        api_type: api_type,
+        api_version: api_version
+      }
+
+      {:ok, session}
+    end
+  end
+
+  defp fetch_login_info(state, cookies, imei, api_type, api_version, language) do
+    encryptor = ParamsEncryptor.new(api_type, imei, System.system_time(:millisecond))
+    enc_params = ParamsEncryptor.get_params(encryptor)
+    enc_key = ParamsEncryptor.get_encrypt_key(encryptor)
+
+    data = %{
+      computer_name: "Web",
+      imei: imei,
+      language: language,
+      ts: System.system_time(:millisecond)
+    }
+
+    encrypted_data = ParamsEncryptor.encode_aes(enc_key, Jason.encode!(data), :base64, false)
+
+    sign_params = %{
+      zcid: enc_params.zcid,
+      zcid_ext: enc_params.zcid_ext,
+      enc_ver: enc_params.enc_ver,
+      params: encrypted_data,
+      type: api_type,
+      client_version: api_version
+    }
+
+    params =
+      sign_params
+      |> Map.put(:signkey, SignKey.generate("getlogininfo", sign_params))
+      |> Map.put(:nretry, 0)
+
+    url = HTTP.build_url("https://wpa.chat.zalo.me/api/login/getLoginInfo", params)
+    headers = api_headers(state.user_agent, cookies)
+
+    case Client.get(url, headers) do
+      {:ok, %{status: 200, body: body}} ->
+        resp = Jason.decode!(body)
+        Logger.debug("QR getLoginInfo response: #{inspect(resp)}")
+
+        if resp["error_code"] == 0 do
+          decrypted = AesCbc.decrypt_utf8_key(enc_key, resp["data"], :base64)
+          Logger.debug("QR decrypted login info: #{inspect(decrypted)}")
+          login_data = Jason.decode!(decrypted)
+
+          case login_data do
+            %{"error_code" => 0, "data" => data} when is_map(data) ->
+              {:ok, data}
+
+            %{"error_code" => code, "error_message" => msg} when code != 0 ->
+              {:error, Error.api(code, msg)}
+
+            %{"uid" => _} = data ->
+              {:ok, data}
+
+            _ ->
+              {:ok, login_data}
+          end
+        else
+          {:error, Error.api(resp["error_code"], resp["error_message"] || "Login info failed")}
+        end
+
+      {:ok, %{status: status}} ->
+        {:error, Error.api(status, "HTTP #{status}")}
+
+      {:error, reason} ->
+        {:error, Error.network("getLoginInfo failed: #{inspect(reason)}")}
+    end
+  end
+
+  defp fetch_server_info(state, cookies, imei, api_type, api_version) do
+    sign_params = %{
+      imei: imei,
+      type: api_type,
+      client_version: api_version,
+      computer_name: "Web"
+    }
+
+    params = Map.put(sign_params, :signkey, SignKey.generate("getserverinfo", sign_params))
+
+    url =
+      HTTP.build_url("https://wpa.chat.zalo.me/api/login/getServerInfo", params,
+        api_version: false
+      )
+
+    headers = api_headers(state.user_agent, cookies)
+
+    case Client.get(url, headers) do
+      {:ok, %{status: 200, body: body}} ->
+        resp = Jason.decode!(body)
+
+        if resp["data"] do
+          {:ok, resp["data"]}
+        else
+          {:error,
+           Error.api(resp["error_code"], resp["error_message"] || "Failed to get server info")}
+        end
+
+      {:ok, %{status: status}} ->
+        {:error, Error.api(status, "HTTP #{status}")}
+
+      {:error, reason} ->
+        {:error, Error.network("getServerInfo failed: #{inspect(reason)}")}
+    end
+  end
+
+  defp api_headers(user_agent, cookies) do
+    cookie_string =
+      cookies
+      |> Enum.map(fn %{"name" => name, "value" => value} -> "#{name}=#{value}" end)
+      |> Enum.join("; ")
+
+    [
+      {"accept", "*/*"},
+      {"accept-language", "vi-VN,vi;q=0.9,en-US;q=0.6,en;q=0.5"},
+      {"sec-ch-ua", ~s("Chromium";"v="130", "Google Chrome";"v="130", "Not?A_Brand";"v="99")},
+      {"sec-ch-ua-mobile", "?0"},
+      {"sec-ch-ua-platform", ~s("Windows")},
+      {"sec-fetch-dest", "empty"},
+      {"sec-fetch-mode", "cors"},
+      {"sec-fetch-site", "cross-site"},
+      {"referer", "https://chat.zalo.me/"},
+      {"user-agent", user_agent},
+      {"cookie", cookie_string}
+    ]
+  end
+
+  defp get_ws_endpoints(server_info) do
+    case server_info["zpw_ws"] do
+      [%{"endpoint" => _} | _] = ws -> Enum.map(ws, fn e -> e["endpoint"] end)
+      [url | _] = ws when is_binary(url) -> ws
+      url when is_binary(url) -> [url]
+      _ -> ["wss://ws1.chat.zalo.me/ws/v2/webchat/socket"]
+    end
+  end
+
+  defp extract_user_info(user_info, state) do
+    # Try to get uid from response first, then fallback to zpw_sek cookie
+    uid_from_response = get_in(user_info, ["data", "uid"])
+
+    uid =
+      if uid_from_response,
+        do: to_string(uid_from_response),
+        else: extract_uid_from_cookies(state)
+
     case user_info do
       %{"data" => %{"info" => %{"name" => name, "avatar" => avatar}}}
       when is_binary(name) and is_binary(avatar) ->
-        {:ok, name, avatar}
+        {:ok, uid, name, avatar}
 
       %{"data" => %{"info" => info}} when is_map(info) ->
-        {:ok, info["name"] || "", info["avatar"] || ""}
+        {:ok, uid, info["name"] || "", info["avatar"] || ""}
 
       # Handle case where data has logged/session_chat_valid but no info
       %{"data" => %{"logged" => true}} ->
-        {:ok, "", ""}
+        {:ok, uid, "", ""}
 
       # Account requires password confirmation - but we still have session cookies
       # Try to proceed anyway and let the caller decide
       %{"data" => %{"logged" => false, "require_confirm_pwd" => true}} ->
         Logger.warning("userinfo returned require_confirm_pwd=true, attempting to proceed anyway")
-        {:ok, "", ""}
+        {:ok, uid, "", ""}
 
       %{"data" => %{"logged" => false}} ->
         {:error, Error.auth("Login failed - session not established")}
@@ -325,6 +508,36 @@ defmodule ZcaEx.Api.LoginQR do
       _ ->
         Logger.warning("Unexpected user info structure: #{inspect(user_info)}")
         {:error, Error.api(nil, "Invalid user info response structure")}
+    end
+  end
+
+  # Extract uid from zpw_sek cookie value
+  # Format: {random}.{uid}.{version}.{token}
+  # Example: 9aYT.430313233.a0.QgOHdvH0oHQ5...
+  defp extract_uid_from_cookies(state) do
+    cookies = CookieJar.export(state.cookie_jar_id)
+
+    zpw_sek =
+      Enum.find_value(cookies, fn
+        %{"name" => "zpw_sek", "value" => value} -> value
+        _ -> nil
+      end)
+
+    case zpw_sek do
+      nil ->
+        Logger.warning("zpw_sek cookie not found")
+        ""
+
+      value ->
+        case String.split(value, ".") do
+          [_random, uid, _version | _rest] when byte_size(uid) > 0 ->
+            Logger.debug("Extracted uid from zpw_sek: #{uid}")
+            uid
+
+          _ ->
+            Logger.warning("Could not parse uid from zpw_sek: #{value}")
+            ""
+        end
     end
   end
 
@@ -474,8 +687,20 @@ defmodule ZcaEx.Api.LoginQR do
   end
 
   defp check_session(state) do
-    url = "https://id.zalo.me/account/checksession?continue=https%3A%2F%2Fchat.zalo.me%2Findex.html"
-    follow_redirects_with_cookies(state, url, 10)
+    url =
+      "https://id.zalo.me/account/checksession?continue=https%3A%2F%2Fchat.zalo.me%2Findex.html"
+
+    result = follow_redirects_with_cookies(state, url, 10)
+
+    # Log cookies after check_session completes
+    id_cookies = CookieJar.get_cookie_string(state.cookie_jar_id, "https://id.zalo.me/")
+    chat_cookies = CookieJar.get_cookie_string(state.cookie_jar_id, "https://chat.zalo.me/")
+    wpa_cookies = CookieJar.get_cookie_string(state.cookie_jar_id, "https://wpa.chat.zalo.me/")
+    Logger.debug("[LoginQR] After check_session - id.zalo.me: #{id_cookies}")
+    Logger.debug("[LoginQR] After check_session - chat.zalo.me: #{chat_cookies}")
+    Logger.debug("[LoginQR] After check_session - wpa.chat.zalo.me: #{wpa_cookies}")
+
+    result
   end
 
   defp follow_redirects_with_cookies(_state, _url, 0) do
@@ -489,10 +714,11 @@ defmodule ZcaEx.Api.LoginQR do
     case Req.get(url, headers: headers, redirect: false, decode_body: false) do
       {:ok, %{status: status, headers: resp_headers}} when status in [301, 302, 303, 307, 308] ->
         store_cookies_from_req_headers(state, url, resp_headers)
-        
+
         case get_location_header(resp_headers) do
           nil ->
             {:error, Error.api(nil, "Redirect without Location header")}
+
           location ->
             next_url = URI.merge(url, location) |> to_string()
             Logger.debug("redirecting to #{next_url}")
@@ -557,12 +783,17 @@ defmodule ZcaEx.Api.LoginQR do
     case Client.get(url, headers) do
       {:ok, %{status: 200, body: body}} ->
         Logger.debug("Userinfo response body: #{body}")
+
         case Jason.decode(body) do
           {:ok, %{"error_code" => 0} = response} ->
             Logger.debug("Parsed userinfo response: #{inspect(response)}")
             {:ok, response}
-          {:ok, %{"error_code" => code, "error_message" => msg}} -> {:error, Error.api(code, msg)}
-          {:error, _} -> {:error, Error.api(nil, "Failed to decode user info")}
+
+          {:ok, %{"error_code" => code, "error_message" => msg}} ->
+            {:error, Error.api(code, msg)}
+
+          {:error, _} ->
+            {:error, Error.api(nil, "Failed to decode user info")}
         end
 
       {:ok, %{status: status}} ->

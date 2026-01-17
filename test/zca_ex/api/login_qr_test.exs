@@ -111,14 +111,23 @@ defmodule ZcaEx.Api.LoginQRTest do
     test "creates login_complete event" do
       cookies = [%{"name" => "session", "value" => "abc"}]
       user_info = %{name: "Test User", avatar: "https://avatar.url"}
-      event = Events.login_complete(cookies, "imei123", "Mozilla/5.0", user_info)
+
+      session = %ZcaEx.Account.Session{
+        uid: "12345",
+        secret_key: "secret",
+        zpw_service_map: %{},
+        ws_endpoints: ["wss://ws.zalo.me"]
+      }
+
+      event = Events.login_complete(cookies, "imei123", "Mozilla/5.0", user_info, session)
 
       assert event == %{
                type: :login_complete,
                cookies: cookies,
                imei: "imei123",
                user_agent: "Mozilla/5.0",
-               user_info: user_info
+               user_info: user_info,
+               session: session
              }
     end
 
@@ -163,7 +172,11 @@ defmodule ZcaEx.Api.LoginQRTest do
   describe "event sending" do
     @tag :external
     test "sends qr_generated event on successful flow start" do
-      {:ok, pid} = LoginQR.start(self(), user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36")
+      {:ok, pid} =
+        LoginQR.start(self(),
+          user_agent:
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+        )
 
       assert_receive {:zca_qr_login, %{type: :qr_generated, code: code, image: image}}, 10_000
       assert is_binary(code)

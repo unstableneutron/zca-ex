@@ -34,7 +34,7 @@ defmodule ZcaEx.Api.LoginQR.Events do
           imei: String.t(),
           user_agent: String.t(),
           user_info: %{uid: String.t(), name: String.t(), avatar: String.t()},
-          login_info: map()
+          session: ZcaEx.Account.Session.t()
         }
 
   @type login_error :: %{
@@ -42,7 +42,13 @@ defmodule ZcaEx.Api.LoginQR.Events do
           error: ZcaEx.Error.t()
         }
 
-  @type t :: qr_generated() | qr_expired() | qr_scanned() | qr_declined() | login_complete() | login_error()
+  @type t ::
+          qr_generated()
+          | qr_expired()
+          | qr_scanned()
+          | qr_declined()
+          | login_complete()
+          | login_error()
 
   @spec qr_generated(String.t(), String.t(), qr_options()) :: qr_generated()
   def qr_generated(code, image, options) do
@@ -76,15 +82,16 @@ defmodule ZcaEx.Api.LoginQR.Events do
     }
   end
 
-  @spec login_complete([map()], String.t(), String.t(), map(), map()) :: login_complete()
-  def login_complete(cookies, imei, user_agent, user_info, login_info) do
+  @spec login_complete([map()], String.t(), String.t(), map(), ZcaEx.Account.Session.t()) ::
+          login_complete()
+  def login_complete(cookies, imei, user_agent, user_info, session) do
     %{
       type: :login_complete,
       cookies: cookies,
       imei: imei,
       user_agent: user_agent,
       user_info: user_info,
-      login_info: login_info
+      session: session
     }
   end
 
