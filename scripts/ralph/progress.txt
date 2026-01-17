@@ -52,3 +52,14 @@ Task ID: 96
 - 6 tests covering user/group typing, PC flag, is_self behavior
 - Files: lib/zca_ex/model/typing.ex, test/zca_ex/model/typing_test.exs
 ---
+
+## 2026-01-17 - Create Undo model
+Thread: Thread: T-019bcada-b702-73fa-b996-10855faaf9ed
+Task ID: 95
+- Created Undo model struct for undo/delete message events
+- Fields: action_id, msg_id, cli_msg_id, msg_type, uid_from, id_to, d_name, ts, status, content, ttl, thread_id, thread_type, is_self, undo_msg_id
+- from_ws_data/3 follows Message/Reaction pattern with uid normalization
+- Extracts undo_msg_id from content.deleteMsg.msgId
+- 12 tests covering user/group undo, self-sent, content handling, optional fields
+- Files: lib/zca_ex/model/undo.ex, test/zca_ex/model/undo_test.exs
+---
