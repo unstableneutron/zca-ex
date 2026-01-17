@@ -75,3 +75,14 @@ Task ID: 98
 - 8 tests covering user/group seen, is_self behavior, missing fields
 - Files: lib/zca_ex/model/seen_message.ex, test/zca_ex/model/seen_message_test.exs
 ---
+
+## 2026-01-17 - Create DeliveredMessage model
+Thread: Thread: T-019bcade-7a56-7618-837a-58bc84bc2ee3
+Task ID: 99
+- Created DeliveredMessage model struct for delivery receipt events
+- Fields: msg_id, real_msg_id, group_id, thread_id, thread_type, is_self, seen, delivered_uids, seen_uids, ts
+- Two from_ws_data/3 clauses: :user (is_self always false, thread_id = first delivered_uid) and :group (is_self = uid in delivered_uids, thread_id = groupId)
+- Based on zca-js UserDeliveredMessage and GroupDeliveredMessage
+- 11 tests covering user/group delivery, is_self behavior, empty lists, missing fields
+- Files: lib/zca_ex/model/delivered_message.ex, test/zca_ex/model/delivered_message_test.exs
+---
