@@ -33,7 +33,7 @@ defmodule ZcaEx.Api.LoginQR.Events do
           cookies: [map()],
           imei: String.t(),
           user_agent: String.t(),
-          user_info: %{name: String.t(), avatar: String.t()}
+          user_info: %{uid: String.t(), name: String.t(), avatar: String.t()}
         }
 
   @type login_error :: %{

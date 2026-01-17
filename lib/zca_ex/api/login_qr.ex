@@ -280,7 +280,7 @@ defmodule ZcaEx.Api.LoginQR do
   defp finalize_login(state) do
     with {:ok, _} <- check_session(state),
          {:ok, user_info} <- get_user_info(state),
-         {:ok, name, avatar} <- extract_user_info(user_info) do
+         {:ok, uid, name, avatar} <- extract_user_info(user_info) do
       cookies = CookieJar.export(state.cookie_jar_id)
 
       event =
@@ -288,7 +288,7 @@ defmodule ZcaEx.Api.LoginQR do
           cookies,
           generate_imei(),
           state.user_agent,
-          %{name: name, avatar: avatar}
+          %{uid: uid, name: name, avatar: avatar}
         )
 
       send_event(state, event)
@@ -298,22 +298,37 @@ defmodule ZcaEx.Api.LoginQR do
 
   defp extract_user_info(user_info) do
     case user_info do
+      %{"data" => %{"uid" => uid, "info" => %{"name" => name, "avatar" => avatar}}}
+      when is_binary(name) and is_binary(avatar) ->
+        {:ok, to_string(uid), name, avatar}
+
+      %{"data" => %{"uid" => uid, "info" => info}} when is_map(info) ->
+        {:ok, to_string(uid), info["name"] || "", info["avatar"] || ""}
+
       %{"data" => %{"info" => %{"name" => name, "avatar" => avatar}}}
       when is_binary(name) and is_binary(avatar) ->
-        {:ok, name, avatar}
+        # Fallback: try to get uid from cookies if not in response
+        {:ok, "", name, avatar}
 
       %{"data" => %{"info" => info}} when is_map(info) ->
-        {:ok, info["name"] || "", info["avatar"] || ""}
+        {:ok, "", info["name"] || "", info["avatar"] || ""}
 
       # Handle case where data has logged/session_chat_valid but no info
+      %{"data" => %{"uid" => uid, "logged" => true}} ->
+        {:ok, to_string(uid), "", ""}
+
       %{"data" => %{"logged" => true}} ->
-        {:ok, "", ""}
+        {:ok, "", "", ""}
 
       # Account requires password confirmation - but we still have session cookies
       # Try to proceed anyway and let the caller decide
+      %{"data" => %{"uid" => uid, "logged" => false, "require_confirm_pwd" => true}} ->
+        Logger.warning("userinfo returned require_confirm_pwd=true, attempting to proceed anyway")
+        {:ok, to_string(uid), "", ""}
+
       %{"data" => %{"logged" => false, "require_confirm_pwd" => true}} ->
         Logger.warning("userinfo returned require_confirm_pwd=true, attempting to proceed anyway")
-        {:ok, "", ""}
+        {:ok, "", "", ""}
 
       %{"data" => %{"logged" => false}} ->
         {:error, Error.auth("Login failed - session not established")}
