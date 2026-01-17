@@ -40,3 +40,15 @@ Task ID: 97
 - 12 tests covering user/group reactions, self-sent, content parsing, optional fields
 - Files: lib/zca_ex/model/reaction.ex, test/zca_ex/model/reaction_test.exs
 ---
+
+## 2026-01-17 - Create Typing model
+Thread: Thread: T-019bcad8-df67-719f-9110-4b9a1cbb5285
+Task ID: 96
+- Created Typing model struct for typing indicator events
+- Fields: uid, ts, is_pc, thread_id, thread_type, is_self
+- from_ws_data/2 takes (data, act) - act determines thread_type ("typing" -> :user, "gtyping" -> :group)
+- thread_id = uid for user typing, gid for group typing
+- is_self always false (typing indicators never from self per zca-js)
+- 6 tests covering user/group typing, PC flag, is_self behavior
+- Files: lib/zca_ex/model/typing.ex, test/zca_ex/model/typing_test.exs
+---
