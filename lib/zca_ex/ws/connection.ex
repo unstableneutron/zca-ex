@@ -576,6 +576,19 @@ defmodule ZcaEx.WS.Connection do
     state
   end
 
+  defp dispatch_event(:typing, _thread_type, payload, state) do
+    processed_payload =
+      if Router.needs_decryption?(:typing) do
+        decrypt_event_data(payload, state.cipher_key)
+      else
+        payload
+      end
+
+    thread_type = typing_thread_type(processed_payload)
+    Dispatcher.dispatch(state.account_id, :typing, thread_type, processed_payload)
+    state
+  end
+
   defp dispatch_event(event_type, thread_type, payload, state) do
     processed_payload =
       if Router.needs_decryption?(event_type) do
@@ -592,6 +605,10 @@ defmodule ZcaEx.WS.Connection do
 
     state
   end
+
+  defp typing_thread_type(%{"data" => %{"act" => "gtyping"}}), do: :group
+  defp typing_thread_type(%{"data" => %{"act" => _}}), do: :user
+  defp typing_thread_type(_), do: :user
 
   defp decrypt_event_data(payload, cipher_key) when is_binary(cipher_key) do
     encrypt_type = Map.get(payload, "encrypt", 0)
