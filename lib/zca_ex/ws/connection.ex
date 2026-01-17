@@ -686,6 +686,80 @@ defmodule ZcaEx.WS.Connection do
     state
   end
 
+  defp dispatch_event(:old_reactions, thread_type, payload, state) do
+    processed_payload =
+      if Router.needs_decryption?(:old_reactions) do
+        decrypt_event_data(payload, state.cipher_key)
+      else
+        payload
+      end
+
+    data = Map.get(processed_payload, "data")
+
+    if is_map(data) do
+      uid = state.session.uid
+
+      raw_reacts =
+        case thread_type do
+          :group -> Map.get(data, "reactGroups", [])
+          _ -> Map.get(data, "reacts", [])
+        end
+
+      if is_list(raw_reacts) do
+        models = Enum.map(raw_reacts, &Reaction.from_ws_data(&1, uid, thread_type))
+
+        Dispatcher.dispatch(state.account_id, :old_reactions, thread_type, models)
+
+        Enum.each(models, fn model ->
+          Dispatcher.dispatch(state.account_id, :reaction, thread_type, model)
+        end)
+      else
+        Logger.warning("Dropping :old_reactions event: reacts/reactGroups not a list")
+      end
+    else
+      Logger.warning("Dropping :old_reactions event: data not a map after decryption")
+    end
+
+    state
+  end
+
+  defp dispatch_event(:old_messages, thread_type, payload, state) do
+    processed_payload =
+      if Router.needs_decryption?(:old_messages) do
+        decrypt_event_data(payload, state.cipher_key)
+      else
+        payload
+      end
+
+    data = Map.get(processed_payload, "data")
+
+    if is_map(data) do
+      uid = state.session.uid
+
+      raw_msgs =
+        case thread_type do
+          :group -> Map.get(data, "groupMsgs", [])
+          _ -> Map.get(data, "msgs", [])
+        end
+
+      if is_list(raw_msgs) do
+        models = Enum.map(raw_msgs, &Message.from_ws_data(&1, uid, thread_type))
+
+        Dispatcher.dispatch(state.account_id, :old_messages, thread_type, models)
+
+        Enum.each(models, fn model ->
+          Dispatcher.dispatch(state.account_id, :message, thread_type, model)
+        end)
+      else
+        Logger.warning("Dropping :old_messages event: msgs/groupMsgs not a list")
+      end
+    else
+      Logger.warning("Dropping :old_messages event: data not a map after decryption")
+    end
+
+    state
+  end
+
   defp dispatch_event(event_type, thread_type, payload, state) do
     processed_payload =
       if Router.needs_decryption?(event_type) do

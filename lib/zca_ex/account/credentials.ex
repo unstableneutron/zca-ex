@@ -115,7 +115,7 @@ defmodule ZcaEx.Account.Credentials do
   def from_map(map) when is_map(map) do
     with {:ok, imei} <- require_field(map, :imei),
          {:ok, user_agent} <- require_field(map, :user_agent),
-         {:ok, cookies} <- require_field(map, :cookies) do
+         {:ok, cookies} <- require_cookies_field(map) do
       {:ok,
        %__MODULE__{
          imei: imei,
@@ -145,6 +145,20 @@ defmodule ZcaEx.Account.Credentials do
     case get_field(map, key) do
       nil -> {:error, {:missing_required, key}}
       value -> {:ok, value}
+    end
+  end
+
+  # Try cookies (plural) first, then cookie (singular) as fallback
+  defp require_cookies_field(map) do
+    case get_field(map, :cookies) do
+      nil ->
+        case get_field(map, :cookie) do
+          nil -> {:error, {:missing_required, :cookies}}
+          value -> {:ok, value}
+        end
+
+      value ->
+        {:ok, value}
     end
   end
 end
