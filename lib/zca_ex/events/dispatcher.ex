@@ -60,11 +60,11 @@ defmodule ZcaEx.Events.Dispatcher do
   """
   @spec dispatch_lifecycle(
           account_id :: String.t(),
-          event :: :connected | :disconnected | :closed | :error,
+          event :: :connected | :disconnected | :closed | :error | :ready,
           payload :: term()
         ) :: :ok
   def dispatch_lifecycle(account_id, event, payload)
-      when event in [:connected, :disconnected, :closed, :error] do
+      when event in [:connected, :disconnected, :closed, :error, :ready] do
     dispatch(account_id, event, payload)
   end
 end

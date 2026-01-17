@@ -12,6 +12,7 @@ defmodule ZcaEx.Events.Topic do
     :disconnected,
     :closed,
     :error,
+    :ready,
     :message,
     :old_messages,
     :reaction,

@@ -1,7 +1,7 @@
 defmodule ZcaEx do
   @moduledoc "Zalo API client for Elixir"
 
-  alias ZcaEx.Account.{Credentials, Manager, Supervisor}
+  alias ZcaEx.Account.{Credentials, Manager, Runtime, Supervisor}
 
   @doc "Add a new Zalo account"
   @spec add_account(String.t(), keyword()) :: {:ok, pid()} | {:error, term()}
@@ -57,5 +57,31 @@ defmodule ZcaEx do
     Registry.select(ZcaEx.Registry, [
       {{{:account_sup, :"$1"}, :_, :_}, [], [:"$1"]}
     ])
+  end
+
+  # Runtime convenience APIs
+
+  @doc "Get account runtime status (phase, config)"
+  @spec account_status(String.t()) :: {:ok, map()} | {:error, term()}
+  def account_status(account_id) do
+    Runtime.status(account_id)
+  end
+
+  @doc "Configure account runtime (auto_login, ws.auto_connect, etc.)"
+  @spec configure_account(String.t(), keyword() | map()) :: :ok
+  def configure_account(account_id, opts) do
+    Runtime.configure(account_id, opts)
+  end
+
+  @doc "Force account to reconcile (retry login/WS connect if needed)"
+  @spec reconnect(String.t()) :: :ok
+  def reconnect(account_id) do
+    Runtime.reconcile(account_id)
+  end
+
+  @doc "Disable auto-login and auto-connect for an account"
+  @spec pause_account(String.t()) :: :ok
+  def pause_account(account_id) do
+    Runtime.stop(account_id)
   end
 end

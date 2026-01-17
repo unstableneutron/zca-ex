@@ -109,6 +109,17 @@ defmodule ZcaEx.WS.Connection do
     send_frame(account_id, frame)
   end
 
+  @doc "Get the current connection status"
+  @spec connection_status(String.t()) ::
+          {:ok, %{state: atom(), connected_at: DateTime.t() | nil}} | {:error, :not_found}
+  def connection_status(account_id) do
+    try do
+      GenServer.call(via(account_id), :connection_status)
+    catch
+      :exit, {:noproc, _} -> {:error, :not_found}
+    end
+  end
+
   ## GenServer Callbacks
 
   @impl true
@@ -174,6 +185,15 @@ defmodule ZcaEx.WS.Connection do
 
   def handle_call({:send_frame, _frame}, _from, state) do
     {:reply, {:error, :not_ready}, state}
+  end
+
+  def handle_call(:connection_status, _from, state) do
+    status = %{
+      state: state.state,
+      connected_at: nil
+    }
+
+    {:reply, {:ok, status}, state}
   end
 
   @impl true
