@@ -1,0 +1,164 @@
+# Ralph Progress Log
+Started: 2026-01-17
+Feature: ZcaEx Event System - Full zca-js Parity
+Parent Task: 92
+
+## Codebase Patterns
+- Use Librarian tool to check zca-js source at github.com/RFS-ADRENO/zca-js when comparing implementations
+- Models use from_ws_data/3 pattern for parsing WebSocket payloads
+- Models normalize uid_from/id_to (convert "0" to actual uid)
+- Tests use Mox for HTTP client (ZcaEx.HTTP.ClientMock)
+- Return {:ok, value} | {:error, ZcaEx.Error.t()} for fallible operations
+
+---
+
+## 2026-01-17 - Fix SendDeliveredEvent get_optional_field bug
+Thread: Thread: T-019bcad3-1bd5-721b-820c-3b6b1f9578ba
+Task ID: 93
+- Fixed get_optional_field function that always returned 0 if key existed
+- Now correctly returns actual integer value, 0 for zero, or default for missing/invalid
+- Copied correct implementation from SendSeenEvent using case/do pattern matching
+- Files changed: lib/zca_ex/api/endpoints/send_delivered_event.ex (lines 127-134)
+---
+
+## 2026-01-17 - Fix SendDeliveredEvent parse_ts bug
+Thread: Thread: T-019bcad4-5339-72ce-ae19-fb5af41aeded
+Task ID: 94
+- Fixed parse_ts function that ignored actual timestamp values (always returned 0 for any non-nil value)
+- Now correctly handles: nil → -1, 0 → 0, integers → value, binary strings → parsed int or -1
+- Copied correct implementation from SendSeenEvent
+- Files changed: lib/zca_ex/api/endpoints/send_delivered_event.ex (lines 136-145)
+---
+
+## 2026-01-17 - Create Reaction model
+Thread: Thread: T-019bcad5-8fa2-710b-8b4b-2b0faa6d05fe
+Task ID: 97
+- Created Reaction model struct following Message model pattern
+- Fields: action_id, msg_id, cli_msg_id, msg_type, uid_from, id_to, d_name, content, ts, ttl, thread_id, thread_type, is_self
+- Implements from_ws_data/3 with uid normalization (converts "0" to actual uid)
+- Content parsing handles JSON string, map, or invalid input
+- 12 tests covering user/group reactions, self-sent, content parsing, optional fields
+- Files: lib/zca_ex/model/reaction.ex, test/zca_ex/model/reaction_test.exs
+---
+
+## 2026-01-17 - Create Typing model
+Thread: Thread: T-019bcad8-df67-719f-9110-4b9a1cbb5285
+Task ID: 96
+- Created Typing model struct for typing indicator events
+- Fields: uid, ts, is_pc, thread_id, thread_type, is_self
+- from_ws_data/2 takes (data, act) - act determines thread_type ("typing" -> :user, "gtyping" -> :group)
+- thread_id = uid for user typing, gid for group typing
+- is_self always false (typing indicators never from self per zca-js)
+- 6 tests covering user/group typing, PC flag, is_self behavior
+- Files: lib/zca_ex/model/typing.ex, test/zca_ex/model/typing_test.exs
+---
+
+## 2026-01-17 - Create Undo model
+Thread: Thread: T-019bcada-b702-73fa-b996-10855faaf9ed
+Task ID: 95
+- Created Undo model struct for undo/delete message events
+- Fields: action_id, msg_id, cli_msg_id, msg_type, uid_from, id_to, d_name, ts, status, content, ttl, thread_id, thread_type, is_self, undo_msg_id
+- from_ws_data/3 follows Message/Reaction pattern with uid normalization
+- Extracts undo_msg_id from content.deleteMsg.msgId
+- 12 tests covering user/group undo, self-sent, content handling, optional fields
+- Files: lib/zca_ex/model/undo.ex, test/zca_ex/model/undo_test.exs
+---
+
+## 2026-01-17 - Create SeenMessage model
+Thread: Thread: T-019bcadc-e7e5-72e3-9797-eaf1bea0841c
+Task ID: 98
+- Created SeenMessage model struct for seen/read receipt events
+- Fields: msg_id, real_msg_id, id_to, group_id, thread_id, thread_type, is_self, seen_uids
+- Two from_ws_data/3 clauses: :user (is_self always false) and :group (is_self true if uid in seen_uids)
+- User seen: thread_id = idTo, has real_msg_id
+- Group seen: thread_id = groupId, has seen_uids list
+- 8 tests covering user/group seen, is_self behavior, missing fields
+- Files: lib/zca_ex/model/seen_message.ex, test/zca_ex/model/seen_message_test.exs
+---
+
+## 2026-01-17 - Create DeliveredMessage model
+Thread: Thread: T-019bcade-7a56-7618-837a-58bc84bc2ee3
+Task ID: 99
+- Created DeliveredMessage model struct for delivery receipt events
+- Fields: msg_id, real_msg_id, group_id, thread_id, thread_type, is_self, seen, delivered_uids, seen_uids, ts
+- Two from_ws_data/3 clauses: :user (is_self always false, thread_id = first delivered_uid) and :group (is_self = uid in delivered_uids, thread_id = groupId)
+- Based on zca-js UserDeliveredMessage and GroupDeliveredMessage
+- 11 tests covering user/group delivery, is_self behavior, empty lists, missing fields
+- Files: lib/zca_ex/model/delivered_message.ex, test/zca_ex/model/delivered_message_test.exs
+---
+
+## 2026-01-17 - Add :undo event type to Router and Topic
+Thread: Thread: T-019bcae0-4632-7100-b495-1650e8316b95
+Task ID: 100
+- Added :undo to event_type union in Router (note: :undo already existed in Topic.event_types)
+- No new route added - undo events come via :message route and are detected by payload content
+- Files changed: lib/zca_ex/ws/router.ex
+---
+
+## 2026-01-17 - Split :seen_delivered into :delivered and :seen events
+Thread: Thread: T-019bcae1-5562-74db-9606-78fd859aac6e
+Task ID: 101
+- Replaced :seen_delivered with separate :delivered and :seen in Router event_type union
+- Updated @decrypted_events MapSet to include :delivered and :seen
+- Updated EVENTS.md to document separate events and removed combined events note
+- Fixed router_test.exs assertion for needs_decryption?(:seen_delivered) -> :delivered
+- Files changed: lib/zca_ex/ws/router.ex, docs/EVENTS.md, test/zca_ex/ws/router_test.exs
+---
+
+## 2026-01-17 - Add thread_type to :typing events
+Thread: Thread: T-019bcae3-15b9-7140-a410-c52778671468
+Task ID: 102
+- Added dispatch_event clause for :typing that determines thread_type from payload["data"]["act"]
+- Added typing_thread_type/1 helper: "gtyping" -> :group, otherwise :user
+- Typing events now dispatched with thread_type using Dispatcher.dispatch/4
+- Files changed: lib/zca_ex/ws/connection.ex
+---
+
+## 2026-01-17 - Split :reaction events by thread_type
+Thread: Thread: T-019bcae4-e840-742e-b93f-6fb4df3e5a0c
+Task ID: 103
+- Added dispatch_event clause for :reaction that splits user and group reactions
+- Extracts 'reacts' array for user reactions (dispatched with :user thread_type)
+- Extracts 'reactGroups' array for group reactions (dispatched with :group thread_type)
+- Each reaction is wrapped in event_payload with individual react data
+- May emit multiple events from single cmd 612 payload (following zca-js pattern)
+- Files changed: lib/zca_ex/ws/connection.ex
+---
+
+## 2026-01-17 - Wire models in WS.Connection dispatcher
+Thread: Thread: T-019bcae7-5269-729f-b794-7b2292749b66
+Task ID: 104
+- Updated WS.Connection dispatcher to transform raw payloads into model structs before dispatching
+- Added model aliases: DeliveredMessage, Message, Reaction, SeenMessage, Typing, Undo
+- :typing events: transform with Typing.from_ws_data(data, act)
+- :reaction events: transform with Reaction.from_ws_data(react, uid, thread_type) for each react
+- :message events: detect undo via is_undo_message?/1 helper, dispatch as :undo or :message
+- :seen_delivered events: detect seen via is_seen_event?/1 helper, dispatch as :seen or :delivered
+- Added helpers: is_undo_message?/1, is_seen_event?/1
+- Updated @decrypted_events in router.ex to use :seen_delivered (single route, split at dispatch)
+- Files changed: lib/zca_ex/ws/connection.ex, lib/zca_ex/ws/router.ex
+---
+
+## 2026-01-17 - Update EVENTS.md and WEBSOCKET.md documentation
+Thread: Thread: T-019bcaeb-2bf2-733a-a02d-9c62f87e636c
+Task ID: 105
+- Updated EVENTS.md Event Types table: added :undo, noted model structs for each event type
+- Added Event Payloads section documenting model structs and their fields
+- Updated example code to pattern match on model structs (Message, Undo, Typing)
+- Updated WEBSOCKET.md routing table: shows :message/:undo split, :delivered/:seen split, thread_type for typing/reaction
+- Added event splitting logic section explaining when each variant is used
+- Updated connection lifecycle diagram to show Model.from_ws_data/3 step
+- Files changed: docs/EVENTS.md, docs/WEBSOCKET.md
+---
+
+## 2026-01-17 - Add integration tests for event dispatching
+Thread: Thread: T-019bcaed-aa4b-710c-8adf-74255dada36f
+Task ID: 106
+- Created comprehensive integration tests for event dispatching with models
+- Tests verify model struct creation: Message, Undo, Typing, Reaction, SeenMessage, DeliveredMessage
+- Tests validate thread_type determination: typing (act field), reaction (reacts/reactGroups split)
+- Tests verify seen/delivered detection logic (seenUids, idTo for seen; deliveredUids for delivered)
+- Tests confirm events can be subscribed to and received via Events pub/sub
+- 22 new tests covering all model types and dispatching scenarios
+- Files: test/zca_ex/ws/connection_dispatch_test.exs
+---
