@@ -679,17 +679,20 @@ defmodule ZcaEx.WS.Connection do
     if is_map(data) do
       uid = state.session.uid
 
+      # Handle double-nested structure: data may contain another "data" key with the actual payload
+      inner_data = if is_map(data["data"]), do: data["data"], else: data
+
       cond do
         # Single message object (has msgId directly)
-        is_binary(data["msgId"]) ->
-          dispatch_one_message(data, uid, thread_type, state.account_id)
+        is_binary(inner_data["msgId"]) ->
+          dispatch_one_message(inner_data, uid, thread_type, state.account_id)
 
         # Batch wrapper format (has msgs/groupMsgs array) - used for realtime pushes too
-        is_list(data["msgs"]) or is_list(data["groupMsgs"]) ->
+        is_list(inner_data["msgs"]) or is_list(inner_data["groupMsgs"]) ->
           raw_msgs =
             case thread_type do
-              :group -> Map.get(data, "groupMsgs", [])
-              _ -> Map.get(data, "msgs", [])
+              :group -> Map.get(inner_data, "groupMsgs", [])
+              _ -> Map.get(inner_data, "msgs", [])
             end
 
           Enum.each(raw_msgs, fn raw ->
@@ -697,7 +700,7 @@ defmodule ZcaEx.WS.Connection do
           end)
 
         true ->
-          Logger.warning("Dropping :message event: unexpected data shape keys=#{inspect(Map.keys(data))}")
+          Logger.warning("Dropping :message event: unexpected data shape keys=#{inspect(Map.keys(inner_data))}")
       end
     else
       Logger.warning("Dropping :message event: data not a map after decryption")
