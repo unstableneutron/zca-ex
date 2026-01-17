@@ -43,4 +43,5 @@ defmodule ZcaEx.Model.Typing do
 
   defp get_thread_id(%{"gid" => gid}, :group), do: gid
   defp get_thread_id(%{"uid" => uid}, :user), do: uid
+  defp get_thread_id(_data, _thread_type), do: nil
 end

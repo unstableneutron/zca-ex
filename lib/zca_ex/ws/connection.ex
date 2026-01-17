@@ -585,12 +585,17 @@ defmodule ZcaEx.WS.Connection do
         payload
       end
 
-    data = Map.get(processed_payload, "data", %{})
-    act = Map.get(data, "act", "typing")
-    thread_type = typing_thread_type(processed_payload)
+    data = Map.get(processed_payload, "data")
 
-    model = Typing.from_ws_data(data, act)
-    Dispatcher.dispatch(state.account_id, :typing, thread_type, model)
+    if is_map(data) do
+      act = Map.get(data, "act", "typing")
+      thread_type = typing_thread_type(processed_payload)
+      model = Typing.from_ws_data(data, act)
+      Dispatcher.dispatch(state.account_id, :typing, thread_type, model)
+    else
+      Logger.warning("Dropping :typing event: data not a map after decryption")
+    end
+
     state
   end
 
@@ -602,22 +607,27 @@ defmodule ZcaEx.WS.Connection do
         payload
       end
 
-    data = Map.get(processed_payload, "data", %{})
-    uid = state.session.uid
+    data = Map.get(processed_payload, "data")
 
-    reacts = Map.get(data, "reacts", [])
+    if is_map(data) do
+      uid = state.session.uid
 
-    Enum.each(reacts, fn react ->
-      model = Reaction.from_ws_data(react, uid, :user)
-      Dispatcher.dispatch(state.account_id, :reaction, :user, model)
-    end)
+      reacts = Map.get(data, "reacts", [])
 
-    react_groups = Map.get(data, "reactGroups", [])
+      Enum.each(reacts, fn react ->
+        model = Reaction.from_ws_data(react, uid, :user)
+        Dispatcher.dispatch(state.account_id, :reaction, :user, model)
+      end)
 
-    Enum.each(react_groups, fn react_group ->
-      model = Reaction.from_ws_data(react_group, uid, :group)
-      Dispatcher.dispatch(state.account_id, :reaction, :group, model)
-    end)
+      react_groups = Map.get(data, "reactGroups", [])
+
+      Enum.each(react_groups, fn react_group ->
+        model = Reaction.from_ws_data(react_group, uid, :group)
+        Dispatcher.dispatch(state.account_id, :reaction, :group, model)
+      end)
+    else
+      Logger.warning("Dropping :reaction event: data not a map after decryption")
+    end
 
     state
   end
@@ -630,15 +640,20 @@ defmodule ZcaEx.WS.Connection do
         payload
       end
 
-    data = Map.get(processed_payload, "data", %{})
-    uid = state.session.uid
+    data = Map.get(processed_payload, "data")
 
-    if is_undo_message?(data) do
-      model = Undo.from_ws_data(data, uid, thread_type)
-      Dispatcher.dispatch(state.account_id, :undo, thread_type, model)
+    if is_map(data) do
+      uid = state.session.uid
+
+      if is_undo_message?(data) do
+        model = Undo.from_ws_data(data, uid, thread_type)
+        Dispatcher.dispatch(state.account_id, :undo, thread_type, model)
+      else
+        model = Message.from_ws_data(data, uid, thread_type)
+        Dispatcher.dispatch(state.account_id, :message, thread_type, model)
+      end
     else
-      model = Message.from_ws_data(data, uid, thread_type)
-      Dispatcher.dispatch(state.account_id, :message, thread_type, model)
+      Logger.warning("Dropping :message event: data not a map after decryption")
     end
 
     state
@@ -652,15 +667,20 @@ defmodule ZcaEx.WS.Connection do
         payload
       end
 
-    data = Map.get(processed_payload, "data", %{})
-    uid = state.session.uid
+    data = Map.get(processed_payload, "data")
 
-    if is_seen_event?(data) do
-      model = SeenMessage.from_ws_data(data, uid, thread_type)
-      Dispatcher.dispatch(state.account_id, :seen, thread_type, model)
+    if is_map(data) do
+      uid = state.session.uid
+
+      if is_seen_event?(data) do
+        model = SeenMessage.from_ws_data(data, uid, thread_type)
+        Dispatcher.dispatch(state.account_id, :seen, thread_type, model)
+      else
+        model = DeliveredMessage.from_ws_data(data, uid, thread_type)
+        Dispatcher.dispatch(state.account_id, :delivered, thread_type, model)
+      end
     else
-      model = DeliveredMessage.from_ws_data(data, uid, thread_type)
-      Dispatcher.dispatch(state.account_id, :delivered, thread_type, model)
+      Logger.warning("Dropping :seen_delivered event: data not a map after decryption")
     end
 
     state

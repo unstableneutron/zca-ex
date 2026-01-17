@@ -64,16 +64,26 @@ defmodule ZcaEx.Model.Message do
   end
 
   defp get_uid_from(%{"uidFrom" => "0"}, uid), do: uid
-  defp get_uid_from(%{"uidFrom" => uid_from}, _uid), do: uid_from
+  defp get_uid_from(%{"uidFrom" => uid_from}, _uid) when is_binary(uid_from), do: uid_from
+  defp get_uid_from(_data, uid), do: uid
 
   defp get_id_to(%{"idTo" => "0"}, uid), do: uid
-  defp get_id_to(%{"idTo" => id_to}, _uid), do: id_to
+  defp get_id_to(%{"idTo" => id_to}, _uid) when is_binary(id_to), do: id_to
+  defp get_id_to(_data, uid), do: uid
 
   defp get_thread_id(%{"uidFrom" => "0", "idTo" => id_to}, :user), do: id_to
   defp get_thread_id(%{"uidFrom" => uid_from}, :user), do: uid_from
   defp get_thread_id(%{"idTo" => id_to}, :group), do: id_to
+  defp get_thread_id(_data, _thread_type), do: nil
 
   defp parse_quote(nil), do: nil
+
+  defp parse_quote(quote_data) when is_binary(quote_data) do
+    case Jason.decode(quote_data) do
+      {:ok, parsed} when is_map(parsed) -> Map.update(parsed, "ownerId", nil, &to_string/1)
+      _ -> nil
+    end
+  end
 
   defp parse_quote(quote_data) when is_map(quote_data) do
     Map.update(quote_data, "ownerId", nil, &to_string/1)
@@ -81,6 +91,13 @@ defmodule ZcaEx.Model.Message do
 
   defp parse_mentions(nil), do: nil
   defp parse_mentions([]), do: nil
+
+  defp parse_mentions(mentions) when is_binary(mentions) do
+    case Jason.decode(mentions) do
+      {:ok, parsed} when is_list(parsed) -> Enum.map(parsed, &Mention.from_map/1)
+      _ -> nil
+    end
+  end
 
   defp parse_mentions(mentions) when is_list(mentions) do
     Enum.map(mentions, &Mention.from_map/1)

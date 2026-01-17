@@ -38,7 +38,7 @@ defmodule ZcaEx.Model.DeliveredMessage do
       msg_id: data["msgId"],
       real_msg_id: data["realMsgId"],
       group_id: nil,
-      thread_id: List.first(delivered_uids) || "",
+      thread_id: List.first(delivered_uids),
       thread_type: :user,
       is_self: false,
       seen: data["seen"] || 0,

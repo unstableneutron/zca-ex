@@ -59,7 +59,7 @@ defmodule ZcaEx.Model.DeliveredMessageTest do
 
       delivered = DeliveredMessage.from_ws_data(data, @uid, :user)
 
-      assert delivered.thread_id == ""
+      assert delivered.thread_id == nil
       assert delivered.delivered_uids == []
     end
 
@@ -76,7 +76,7 @@ defmodule ZcaEx.Model.DeliveredMessageTest do
       assert delivered.delivered_uids == []
       assert delivered.seen_uids == []
       assert delivered.ts == nil
-      assert delivered.thread_id == ""
+      assert delivered.thread_id == nil
     end
   end
 

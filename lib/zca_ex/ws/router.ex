@@ -13,6 +13,7 @@ defmodule ZcaEx.WS.Router do
           | :typing
           | :delivered
           | :seen
+          | :seen_delivered
           | :duplicate
           | :unknown
 
