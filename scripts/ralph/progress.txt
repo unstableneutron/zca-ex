@@ -29,3 +29,14 @@ Task ID: 94
 - Copied correct implementation from SendSeenEvent
 - Files changed: lib/zca_ex/api/endpoints/send_delivered_event.ex (lines 136-145)
 ---
+
+## 2026-01-17 - Create Reaction model
+Thread: Thread: T-019bcad5-8fa2-710b-8b4b-2b0faa6d05fe
+Task ID: 97
+- Created Reaction model struct following Message model pattern
+- Fields: action_id, msg_id, cli_msg_id, msg_type, uid_from, id_to, d_name, content, ts, ttl, thread_id, thread_type, is_self
+- Implements from_ws_data/3 with uid normalization (converts "0" to actual uid)
+- Content parsing handles JSON string, map, or invalid input
+- 12 tests covering user/group reactions, self-sent, content parsing, optional fields
+- Files: lib/zca_ex/model/reaction.ex, test/zca_ex/model/reaction_test.exs
+---
