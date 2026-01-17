@@ -134,7 +134,15 @@ defmodule ZcaEx.Api.Endpoints.SendDeliveredEvent do
   end
 
   defp parse_ts(nil), do: -1
-  defp parse_ts(_val), do: 0
+  defp parse_ts(0), do: 0
+  defp parse_ts(val) when is_integer(val), do: val
+
+  defp parse_ts(val) when is_binary(val) do
+    case Integer.parse(val) do
+      {int, _} -> int
+      :error -> -1
+    end
+  end
 
   defp maybe_add_grid(msg_infos, true, thread_id), do: Map.put(msg_infos, :grid, thread_id)
   defp maybe_add_grid(msg_infos, false, _thread_id), do: msg_infos

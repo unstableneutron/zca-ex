@@ -20,3 +20,12 @@ Task ID: 93
 - Copied correct implementation from SendSeenEvent using case/do pattern matching
 - Files changed: lib/zca_ex/api/endpoints/send_delivered_event.ex (lines 127-134)
 ---
+
+## 2026-01-17 - Fix SendDeliveredEvent parse_ts bug
+Thread: Thread: T-019bcad4-5339-72ce-ae19-fb5af41aeded
+Task ID: 94
+- Fixed parse_ts function that ignored actual timestamp values (always returned 0 for any non-nil value)
+- Now correctly handles: nil → -1, 0 → 0, integers → value, binary strings → parsed int or -1
+- Copied correct implementation from SendSeenEvent
+- Files changed: lib/zca_ex/api/endpoints/send_delivered_event.ex (lines 136-145)
+---
