@@ -19,7 +19,11 @@ defmodule ZcaEx.Events.Dispatcher do
       ZcaEx.Events.Dispatcher.dispatch("acc123", :message, %{from: "user1", text: "hello"})
 
   """
-  @spec dispatch(account_id :: String.t(), event_type :: atom(), payload :: term()) :: :ok
+  @spec dispatch(account_id :: String.t() | atom(), event_type :: atom(), payload :: term()) :: :ok
+  def dispatch(account_id, event_type, payload) when is_atom(account_id) do
+    dispatch(Atom.to_string(account_id), event_type, payload)
+  end
+
   def dispatch(account_id, event_type, payload)
       when is_binary(account_id) and is_atom(event_type) do
     topic = Topic.build(account_id, event_type)

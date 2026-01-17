@@ -45,9 +45,13 @@ defmodule ZcaEx.Events.Topic do
       "zca:acc123:message:group"
 
   """
-  @spec build(account_id :: String.t(), event_type :: atom(), sub_type :: atom() | nil) ::
+  @spec build(account_id :: String.t() | atom(), event_type :: atom(), sub_type :: atom() | nil) ::
           String.t()
   def build(account_id, event_type, sub_type \\ nil)
+
+  def build(account_id, event_type, sub_type) when is_atom(account_id) do
+    build(Atom.to_string(account_id), event_type, sub_type)
+  end
 
   def build(account_id, event_type, nil) when is_binary(account_id) and is_atom(event_type) do
     "zca:#{account_id}:#{event_type}"
