@@ -39,7 +39,8 @@ defmodule ZcaEx.MixProject do
       {:telemetry, "~> 1.2"},
       {:phoenix_pubsub, "~> 2.1", optional: true},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.30", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.30", only: :dev, runtime: false},
+      {:mox, "~> 1.2", only: :test}
     ]
   end
 

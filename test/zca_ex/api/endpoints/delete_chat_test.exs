@@ -1,8 +1,13 @@
 defmodule ZcaEx.Api.Endpoints.DeleteChatTest do
   use ExUnit.Case, async: false
 
+  import Mox
+
   alias ZcaEx.Api.Endpoints.DeleteChat
-  alias ZcaEx.Test.{MockAccountClient, Fixtures}
+  alias ZcaEx.HTTP.{AccountClientMock, Response}
+  alias ZcaEx.Test.Fixtures
+
+  setup :verify_on_exit!
 
   setup do
     session =
@@ -145,15 +150,17 @@ defmodule ZcaEx.Api.Endpoints.DeleteChatTest do
       last_message: last_message
     } do
       response_data = %{"status" => 1}
-      MockAccountClient.setup_mock(Fixtures.build_success_response(response_data, session.secret_key))
+      response = Fixtures.build_success_response(response_data, session.secret_key)
 
-      result = call_with_mock(session, credentials, last_message, "user456", :user)
+      expect(AccountClientMock, :post, fn _account_id, url, body, _user_agent, _headers ->
+        assert url =~ "/api/message/deleteconver"
+        assert body =~ "params="
+        {:ok, %Response{status: response.status, body: response.body, headers: response.headers}}
+      end)
+
+      result = DeleteChat.call(session, credentials, last_message, "user456", :user)
 
       assert {:ok, %{status: 1}} = result
-
-      {url, body, _headers} = MockAccountClient.get_last_request()
-      assert url =~ "/api/message/deleteconver"
-      assert body =~ "params="
     end
 
     test "deletes group chat successfully", %{
@@ -162,14 +169,16 @@ defmodule ZcaEx.Api.Endpoints.DeleteChatTest do
       last_message: last_message
     } do
       response_data = %{"status" => 1}
-      MockAccountClient.setup_mock(Fixtures.build_success_response(response_data, session.secret_key))
+      response = Fixtures.build_success_response(response_data, session.secret_key)
 
-      result = call_with_mock(session, credentials, last_message, "group789", :group)
+      expect(AccountClientMock, :post, fn _account_id, url, _body, _user_agent, _headers ->
+        assert url =~ "/api/group/deleteconver"
+        {:ok, %Response{status: response.status, body: response.body, headers: response.headers}}
+      end)
+
+      result = DeleteChat.call(session, credentials, last_message, "group789", :group)
 
       assert {:ok, %{status: 1}} = result
-
-      {url, _body, _headers} = MockAccountClient.get_last_request()
-      assert url =~ "/api/group/deleteconver"
     end
 
     test "defaults to user thread type", %{
@@ -178,14 +187,16 @@ defmodule ZcaEx.Api.Endpoints.DeleteChatTest do
       last_message: last_message
     } do
       response_data = %{"status" => 1}
-      MockAccountClient.setup_mock(Fixtures.build_success_response(response_data, session.secret_key))
+      response = Fixtures.build_success_response(response_data, session.secret_key)
 
-      result = call_with_mock_default_type(session, credentials, last_message, "user456")
+      expect(AccountClientMock, :post, fn _account_id, url, _body, _user_agent, _headers ->
+        assert url =~ "/api/message/deleteconver"
+        {:ok, %Response{status: response.status, body: response.body, headers: response.headers}}
+      end)
+
+      result = DeleteChat.call(session, credentials, last_message, "user456")
 
       assert {:ok, %{status: 1}} = result
-
-      {url, _body, _headers} = MockAccountClient.get_last_request()
-      assert url =~ "/api/message/deleteconver"
     end
   end
 
@@ -195,68 +206,16 @@ defmodule ZcaEx.Api.Endpoints.DeleteChatTest do
       credentials: credentials,
       last_message: last_message
     } do
-      MockAccountClient.setup_mock(Fixtures.build_error_response(-1, "Conversation not found"))
+      response = Fixtures.build_error_response(-1, "Conversation not found")
 
-      result = call_with_mock(session, credentials, last_message, "user456", :user)
+      expect(AccountClientMock, :post, fn _account_id, _url, _body, _user_agent, _headers ->
+        {:ok, %Response{status: response.status, body: response.body, headers: response.headers}}
+      end)
+
+      result = DeleteChat.call(session, credentials, last_message, "user456", :user)
 
       assert {:error, error} = result
       assert error.message == "Conversation not found"
     end
-  end
-
-  defp call_with_mock(session, credentials, last_message, thread_id, thread_type) do
-    original_client = Application.get_env(:zca, :http_client, ZcaEx.HTTP.AccountClient)
-    Application.put_env(:zca, :http_client, MockAccountClient)
-
-    Code.eval_string("""
-    defmodule ZcaEx.Api.Endpoints.DeleteChatMock do
-      use ZcaEx.Api.Factory
-      alias ZcaEx.Test.MockAccountClient, as: AccountClient
-
-      def call(session, credentials, last_message, thread_id, thread_type) do
-        params = ZcaEx.Api.Endpoints.DeleteChat.build_params(last_message, thread_id, thread_type, credentials)
-
-        case encrypt_params(session.secret_key, params) do
-          {:ok, encrypted_params} ->
-            url = ZcaEx.Api.Endpoints.DeleteChat.build_url(thread_type, session)
-            body = build_form_body(%{params: encrypted_params})
-
-            case AccountClient.post(session.uid, url, body, credentials.user_agent) do
-              {:ok, resp} ->
-                Response.parse(resp, session.secret_key)
-                |> transform_response()
-
-              {:error, reason} ->
-                {:error, %ZcaEx.Error{message: "Request failed: \#{inspect(reason)}", code: nil}}
-            end
-
-          {:error, _} = error ->
-            error
-        end
-      end
-
-      defp transform_response({:ok, %{"status" => status}}) do
-        {:ok, %{status: status}}
-      end
-
-      defp transform_response({:ok, data}) when is_map(data) do
-        {:ok, %{status: data["status"] || 0}}
-      end
-
-      defp transform_response({:error, _} = error), do: error
-    end
-    """)
-
-    result = ZcaEx.Api.Endpoints.DeleteChatMock.call(session, credentials, last_message, thread_id, thread_type)
-
-    Application.put_env(:zca, :http_client, original_client)
-    :code.purge(ZcaEx.Api.Endpoints.DeleteChatMock)
-    :code.delete(ZcaEx.Api.Endpoints.DeleteChatMock)
-
-    result
-  end
-
-  defp call_with_mock_default_type(session, credentials, last_message, thread_id) do
-    call_with_mock(session, credentials, last_message, thread_id, :user)
   end
 end

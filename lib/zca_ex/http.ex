@@ -7,4 +7,9 @@ defmodule ZcaEx.HTTP do
   defdelegate build_headers(user_agent), to: HeaderBuilder, as: :build
   defdelegate get(url, headers \\ []), to: Client
   defdelegate post(url, body, headers \\ []), to: Client
+
+  @doc "Returns the configured HTTP client module (injectable for testing)"
+  def client do
+    Application.get_env(:zca_ex, :http_client, ZcaEx.HTTP.AccountClient)
+  end
 end

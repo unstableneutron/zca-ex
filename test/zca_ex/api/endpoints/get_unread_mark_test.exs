@@ -1,8 +1,13 @@
 defmodule ZcaEx.Api.Endpoints.GetUnreadMarkTest do
   use ExUnit.Case, async: false
 
+  import Mox
+
   alias ZcaEx.Api.Endpoints.GetUnreadMark
-  alias ZcaEx.Test.{MockAccountClient, Fixtures}
+  alias ZcaEx.HTTP.{AccountClientMock, Response}
+  alias ZcaEx.Test.Fixtures
+
+  setup :verify_on_exit!
 
   setup do
     session =
@@ -51,37 +56,32 @@ defmodule ZcaEx.Api.Endpoints.GetUnreadMarkTest do
   end
 
   describe "transform_response" do
-    test "handles data as map" do
+    test "handles data as map", %{session: session, credentials: credentials} do
       response_data = %{
         "convsGroup" => [%{"id" => "g1"}],
         "convsUser" => [%{"id" => "u1"}],
         "status" => 1
       }
+      response = Fixtures.build_success_response(response_data, session.secret_key)
 
-      MockAccountClient.setup_mock(Fixtures.build_success_response(response_data, Fixtures.test_secret_key()))
+      expect(AccountClientMock, :get, fn _account_id, _url, _user_agent, _headers ->
+        {:ok, %Response{status: response.status, body: response.body, headers: response.headers}}
+      end)
 
-      session =
-        Fixtures.build_session()
-        |> Map.put(:zpw_service_map, %{"conversation" => ["https://conv.example.com"]})
-
-      credentials = Fixtures.build_credentials()
-
-      result = call_with_mock(session, credentials)
+      result = GetUnreadMark.get(session, credentials)
 
       assert {:ok, %{convs_group: [%{"id" => "g1"}], convs_user: [%{"id" => "u1"}], status: 1}} = result
     end
 
-    test "returns empty lists when data is missing" do
+    test "returns empty lists when data is missing", %{session: session, credentials: credentials} do
       response_data = %{"status" => 1}
-      MockAccountClient.setup_mock(Fixtures.build_success_response(response_data, Fixtures.test_secret_key()))
+      response = Fixtures.build_success_response(response_data, session.secret_key)
 
-      session =
-        Fixtures.build_session()
-        |> Map.put(:zpw_service_map, %{"conversation" => ["https://conv.example.com"]})
+      expect(AccountClientMock, :get, fn _account_id, _url, _user_agent, _headers ->
+        {:ok, %Response{status: response.status, body: response.body, headers: response.headers}}
+      end)
 
-      credentials = Fixtures.build_credentials()
-
-      result = call_with_mock(session, credentials)
+      result = GetUnreadMark.get(session, credentials)
 
       assert {:ok, %{convs_group: [], convs_user: [], status: 1}} = result
     end
@@ -94,10 +94,15 @@ defmodule ZcaEx.Api.Endpoints.GetUnreadMarkTest do
         "convsUser" => [%{"id" => "user1", "ts" => 2_000_000}],
         "status" => 1
       }
+      response = Fixtures.build_success_response(response_data, session.secret_key)
 
-      MockAccountClient.setup_mock(Fixtures.build_success_response(response_data, session.secret_key))
+      expect(AccountClientMock, :get, fn _account_id, url, _user_agent, _headers ->
+        assert url =~ "/api/conv/getUnreadMark"
+        assert url =~ "params="
+        {:ok, %Response{status: response.status, body: response.body, headers: response.headers}}
+      end)
 
-      result = call_with_mock(session, credentials)
+      result = GetUnreadMark.get(session, credentials)
 
       assert {:ok,
               %{
@@ -105,78 +110,21 @@ defmodule ZcaEx.Api.Endpoints.GetUnreadMarkTest do
                 convs_user: [%{"id" => "user1", "ts" => 2_000_000}],
                 status: 1
               }} = result
-
-      {url, body, _headers} = MockAccountClient.get_last_request()
-      assert url =~ "/api/conv/getUnreadMark"
-      assert url =~ "params="
-      assert body == nil
     end
   end
 
   describe "error handling" do
     test "returns error on API error", %{session: session, credentials: credentials} do
-      MockAccountClient.setup_mock(Fixtures.build_error_response(-1, "Operation failed"))
+      response = Fixtures.build_error_response(-1, "Operation failed")
 
-      result = call_with_mock(session, credentials)
+      expect(AccountClientMock, :get, fn _account_id, _url, _user_agent, _headers ->
+        {:ok, %Response{status: response.status, body: response.body, headers: response.headers}}
+      end)
+
+      result = GetUnreadMark.get(session, credentials)
 
       assert {:error, error} = result
       assert error.message == "Operation failed"
     end
-  end
-
-  defp call_with_mock(session, credentials) do
-    Code.eval_string("""
-    defmodule ZcaEx.Api.Endpoints.GetUnreadMarkMock do
-      use ZcaEx.Api.Factory
-      alias ZcaEx.Test.MockAccountClient, as: AccountClient
-      alias ZcaEx.Error
-
-      def get(session, credentials) do
-        params = ZcaEx.Api.Endpoints.GetUnreadMark.build_params()
-
-        case encrypt_params(session.secret_key, params) do
-          {:ok, encrypted_params} ->
-            url = ZcaEx.Api.Endpoints.GetUnreadMark.build_url(session, encrypted_params)
-
-            case AccountClient.get(session.uid, url, credentials.user_agent) do
-              {:ok, resp} ->
-                Response.parse(resp, session.secret_key)
-                |> transform_response()
-
-              {:error, reason} ->
-                {:error, Error.new(:network, "Request failed: \#{inspect(reason)}")}
-            end
-
-          {:error, _} = error ->
-            error
-        end
-      end
-
-      defp transform_response({:ok, data}) when is_map(data) do
-        {:ok,
-         %{
-           convs_group: data["convsGroup"] || data[:convsGroup] || [],
-           convs_user: data["convsUser"] || data[:convsUser] || [],
-           status: data["status"] || data[:status]
-         }}
-      end
-
-      defp transform_response({:ok, data}) when is_binary(data) do
-        case Jason.decode(data) do
-          {:ok, parsed} -> transform_response({:ok, parsed})
-          {:error, _} -> {:ok, %{convs_group: [], convs_user: [], status: nil}}
-        end
-      end
-
-      defp transform_response({:error, _} = error), do: error
-    end
-    """)
-
-    result = ZcaEx.Api.Endpoints.GetUnreadMarkMock.get(session, credentials)
-
-    :code.purge(ZcaEx.Api.Endpoints.GetUnreadMarkMock)
-    :code.delete(ZcaEx.Api.Endpoints.GetUnreadMarkMock)
-
-    result
   end
 end

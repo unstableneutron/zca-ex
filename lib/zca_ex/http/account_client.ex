@@ -1,5 +1,6 @@
 defmodule ZcaEx.HTTP.AccountClient do
   @moduledoc "HTTP client with automatic cookie handling for accounts"
+  @behaviour ZcaEx.HTTP.AccountClientBehaviour
 
   alias ZcaEx.HTTP.{Client, HeaderBuilder, Response}
   alias ZcaEx.HTTP.Middleware.Cookies

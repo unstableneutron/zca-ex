@@ -13,8 +13,26 @@ defmodule ZcaEx.Api.Factory do
 
       alias ZcaEx.Account.{Session, Credentials}
       alias ZcaEx.Crypto.AesCbc
-      alias ZcaEx.HTTP.AccountClient
       alias ZcaEx.Api.{Response, Url}
+
+      # Injectable HTTP client - uses Application.get_env at runtime
+      defp http_client, do: ZcaEx.HTTP.client()
+
+      # Convenience delegation to http_client for common patterns
+      defmodule AccountClient do
+        @moduledoc false
+        def get(account_id, url, user_agent, headers \\ []),
+          do: ZcaEx.HTTP.client().get(account_id, url, user_agent, headers)
+
+        def post(account_id, url, body, user_agent, headers \\ []),
+          do: ZcaEx.HTTP.client().post(account_id, url, body, user_agent, headers)
+
+        def post_form(account_id, url, params, user_agent, headers \\ []),
+          do: ZcaEx.HTTP.client().post_form(account_id, url, params, user_agent, headers)
+
+        def post_multipart(account_id, url, parts, user_agent, headers \\ []),
+          do: ZcaEx.HTTP.client().post_multipart(account_id, url, parts, user_agent, headers)
+      end
     end
   end
 
