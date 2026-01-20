@@ -189,8 +189,7 @@ defmodule ZcaEx.Adapters.PhoenixPubSub do
   end
 
   defp subscribe_account(account_id) do
-    for event_type <- Topic.event_types() do
-      topic = Topic.build(account_id, event_type)
+    for topic <- Topic.topics_for_account(account_id) do
       Events.subscribe(topic)
     end
 
@@ -198,8 +197,7 @@ defmodule ZcaEx.Adapters.PhoenixPubSub do
   end
 
   defp unsubscribe_account(account_id) do
-    for event_type <- Topic.event_types() do
-      topic = Topic.build(account_id, event_type)
+    for topic <- Topic.topics_for_account(account_id) do
       Events.unsubscribe(topic)
     end
 

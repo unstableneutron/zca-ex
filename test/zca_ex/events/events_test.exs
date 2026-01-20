@@ -35,6 +35,31 @@ defmodule ZcaEx.EventsTest do
     end
   end
 
+  describe "Topic.topics_for_account/1" do
+    test "includes subtype topics for user/group events" do
+      topics = Topic.topics_for_account("acc1")
+
+      assert "zca:acc1:message:user" in topics
+      assert "zca:acc1:message:group" in topics
+      assert "zca:acc1:reaction:user" in topics
+      assert "zca:acc1:reaction:group" in topics
+      assert "zca:acc1:typing:user" in topics
+      assert "zca:acc1:typing:group" in topics
+      assert "zca:acc1:seen:user" in topics
+      assert "zca:acc1:seen:group" in topics
+      assert "zca:acc1:delivered:user" in topics
+      assert "zca:acc1:delivered:group" in topics
+      assert "zca:acc1:old_messages:user" in topics
+      assert "zca:acc1:old_messages:group" in topics
+      assert "zca:acc1:old_reactions:user" in topics
+      assert "zca:acc1:old_reactions:group" in topics
+      assert "zca:acc1:undo:user" in topics
+      assert "zca:acc1:undo:group" in topics
+      assert "zca:acc1:connected" in topics
+      assert "zca:acc1:ready" in topics
+    end
+  end
+
   describe "Topic.parse/1" do
     test "parses topic without sub_type" do
       assert {:ok, %{account_id: "acc123", event_type: :message, sub_type: nil}} =

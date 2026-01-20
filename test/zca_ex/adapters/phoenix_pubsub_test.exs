@@ -3,6 +3,7 @@ defmodule ZcaEx.Adapters.PhoenixPubSubTest do
 
   alias ZcaEx.Adapters.PhoenixPubSub
   alias ZcaEx.Events
+  alias ZcaEx.Events.Topic
 
   @moduletag :phoenix_pubsub
 
@@ -125,7 +126,7 @@ defmodule ZcaEx.Adapters.PhoenixPubSubTest do
     end
 
     test "broadcasts :pg events to Phoenix.PubSub", %{pubsub: pubsub} do
-      topic = "zca:acc1:message"
+      topic = Topic.build("acc1", :message, :user)
 
       # Subscribe to Phoenix.PubSub
       Phoenix.PubSub.subscribe(pubsub, topic)
@@ -143,8 +144,8 @@ defmodule ZcaEx.Adapters.PhoenixPubSubTest do
     test "bridges events for multiple accounts", %{adapter: adapter, pubsub: pubsub} do
       PhoenixPubSub.add_account(adapter, "acc2")
 
-      topic1 = "zca:acc1:message"
-      topic2 = "zca:acc2:message"
+      topic1 = Topic.build("acc1", :message, :user)
+      topic2 = Topic.build("acc2", :message, :group)
 
       Phoenix.PubSub.subscribe(pubsub, topic1)
       Phoenix.PubSub.subscribe(pubsub, topic2)
@@ -207,20 +208,22 @@ defmodule ZcaEx.Adapters.PhoenixPubSubTest do
     end
 
     test "subscribes to all event types for an account", %{pubsub: pubsub} do
-      # Test a few different event types
-      event_types = [:message, :reaction, :typing, :connected]
+      event_topics = [
+        Topic.build("acc1", :connected),
+        Topic.build("acc1", :message, :user),
+        Topic.build("acc1", :reaction, :group),
+        Topic.build("acc1", :typing, :user)
+      ]
 
-      for event_type <- event_types do
-        topic = "zca:acc1:#{event_type}"
+      for topic <- event_topics do
         Phoenix.PubSub.subscribe(pubsub, topic)
       end
 
       Process.sleep(10)
 
-      for event_type <- event_types do
-        topic = "zca:acc1:#{event_type}"
-        Events.broadcast(topic, %{type: event_type})
-        assert_receive {:zca_event, ^topic, %{type: ^event_type}}, 1000
+      for topic <- event_topics do
+        Events.broadcast(topic, %{topic: topic})
+        assert_receive {:zca_event, ^topic, %{topic: ^topic}}, 1000
       end
     end
   end

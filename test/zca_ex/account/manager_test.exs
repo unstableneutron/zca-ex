@@ -66,6 +66,18 @@ defmodule ZcaEx.Account.ManagerTest do
     end
   end
 
+  describe "server info error normalization" do
+    test "maps HTTP status errors to ZcaEx.Error" do
+      error = ZcaEx.Account.Manager.normalize_server_info_error({:ok, %{status: 500}})
+      assert %ZcaEx.Error{category: :api, code: 500} = error
+    end
+
+    test "maps client errors to ZcaEx.Error" do
+      error = ZcaEx.Account.Manager.normalize_server_info_error({:error, :timeout})
+      assert %ZcaEx.Error{category: :network, retryable?: true} = error
+    end
+  end
+
   # Replicates the private get_ws_endpoints/1 function from Manager
   defp parse_ws_endpoints(server_info) do
     case server_info["zpw_ws"] do

@@ -9,6 +9,7 @@ defmodule ZcaEx.Api.Endpoints.GetLoginInfo do
   require Logger
 
   alias ZcaEx.Crypto.{AesCbc, ParamsEncryptor, SignKey}
+  alias ZcaEx.Error
   alias ZcaEx.HTTP
   alias ZcaEx.HTTP.Client
 
@@ -107,7 +108,7 @@ defmodule ZcaEx.Api.Endpoints.GetLoginInfo do
               {:ok, data}
 
             %{"error_code" => code, "error_message" => msg} when code != 0 ->
-              {:error, "Login failed (#{code}): #{msg}"}
+              {:error, Error.api(code, "Login failed: #{msg}")}
 
             %{"uid" => _} = data ->
               {:ok, data}
@@ -116,14 +117,25 @@ defmodule ZcaEx.Api.Endpoints.GetLoginInfo do
               {:ok, login_data}
           end
         else
-          {:error, resp["error_message"] || "Login failed"}
+          {:error, Error.api(resp["error_code"], resp["error_message"] || "Login failed")}
         end
 
-      {:ok, %{status: status}} ->
-        {:error, "HTTP #{status}"}
+      result ->
+        {:error, normalize_error(result)}
+    end
+  end
+
+  @doc false
+  def normalize_error(result) do
+    case result do
+      {:ok, %{status: status}} when is_integer(status) ->
+        Error.api(status, "HTTP #{status}")
 
       {:error, reason} ->
-        {:error, inspect(reason)}
+        Error.normalize({:error, reason})
+
+      other ->
+        Error.normalize(other)
     end
   end
 

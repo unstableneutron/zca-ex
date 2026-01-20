@@ -27,11 +27,41 @@ defmodule ZcaEx.Events.Topic do
     :cipher_key
   ]
 
+  @thread_sub_types [:user, :group]
+
+  @event_types_with_subtypes [
+    :message,
+    :reaction,
+    :typing,
+    :seen,
+    :delivered,
+    :old_messages,
+    :old_reactions,
+    :undo
+  ]
+
   @doc """
   Returns the list of supported event types.
   """
   @spec event_types() :: [atom()]
   def event_types, do: @event_types
+
+  @doc """
+  Returns the full list of topics for an account, including subtype topics.
+  """
+  @spec topics_for_account(String.t() | atom()) :: [String.t()]
+  def topics_for_account(account_id) do
+    account_id = if is_atom(account_id), do: Atom.to_string(account_id), else: account_id
+
+    @event_types
+    |> Enum.flat_map(fn event_type ->
+      if event_type in @event_types_with_subtypes do
+        Enum.map(@thread_sub_types, &build(account_id, event_type, &1))
+      else
+        [build(account_id, event_type)]
+      end
+    end)
+  end
 
   @doc """
   Builds a topic string for the given account, event type, and optional sub-type.

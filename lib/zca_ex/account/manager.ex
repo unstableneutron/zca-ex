@@ -8,6 +8,7 @@ defmodule ZcaEx.Account.Manager do
   alias ZcaEx.{CookieJar, HTTP}
   alias ZcaEx.Crypto.SignKey
   alias ZcaEx.HTTP.AccountClient
+  alias ZcaEx.Error
 
   defstruct [:account_id, :credentials, :session, state: :initialized]
 
@@ -151,14 +152,25 @@ defmodule ZcaEx.Account.Manager do
         if resp["data"] do
           {:ok, resp["data"]}
         else
-          {:error, resp["error_message"] || "Failed to get server info"}
+          {:error, Error.api(resp["error_code"], resp["error_message"] || "Failed to get server info")}
         end
 
-      {:ok, %{status: status}} ->
-        {:error, "HTTP #{status}"}
+      result ->
+        {:error, normalize_server_info_error(result)}
+    end
+  end
+
+  @doc false
+  def normalize_server_info_error(result) do
+    case result do
+      {:ok, %{status: status}} when is_integer(status) ->
+        Error.api(status, "HTTP #{status}")
 
       {:error, reason} ->
-        {:error, reason}
+        Error.normalize({:error, reason})
+
+      other ->
+        Error.normalize(other)
     end
   end
 
