@@ -42,18 +42,28 @@ defmodule ZcaEx.Api.Endpoints.SendMessage do
               optional(:ttl) => non_neg_integer()
             }
 
-  @type send_result :: {:ok, %{msg_id: integer()}} | {:error, Error.t()}
+  @type send_result :: {:ok, %{msg_id: integer(), client_id: integer()}} | {:error, Error.t()}
 
-  @doc "Send a message to a user or group"
-  @spec send(message_content(), String.t(), :user | :group, Session.t(), Credentials.t()) ::
+  @doc """
+  Send a message to a user or group.
+
+  Options:
+    - `:client_id` - Custom client ID for message correlation. If not provided,
+      one is generated using timestamp + monotonic counter.
+
+  Returns `{:ok, %{msg_id: integer(), client_id: integer()}}` on success.
+  """
+  @spec send(message_content(), String.t(), :user | :group, Session.t(), Credentials.t(), keyword()) ::
           send_result()
-  def send(message, thread_id, thread_type, session, credentials)
+  def send(message, thread_id, thread_type, session, credentials, opts \\ [])
 
-  def send(msg, thread_id, thread_type, session, creds) when is_binary(msg) do
-    send(%{msg: msg}, thread_id, thread_type, session, creds)
+  def send(msg, thread_id, thread_type, session, creds, opts) when is_binary(msg) do
+    send(%{msg: msg}, thread_id, thread_type, session, creds, opts)
   end
 
-  def send(%{msg: msg} = content, thread_id, thread_type, session, creds) do
+  def send(%{msg: msg} = content, thread_id, thread_type, session, creds, opts) do
+    client_id = Keyword.get(opts, :client_id, default_client_id())
+
     with :ok <- validate_message(msg),
          :ok <- validate_thread_id(thread_id),
          {:ok, mentions} <- handle_mentions(content[:mentions], msg, thread_type),
@@ -62,7 +72,7 @@ defmodule ZcaEx.Api.Endpoints.SendMessage do
       has_mentions = mentions != []
 
       url = build_message_url(session, thread_type, has_quote, has_mentions)
-      params = build_params(content, thread_id, thread_type, mentions, creds)
+      params = build_params(content, thread_id, thread_type, mentions, creds, client_id)
 
       case encrypt_params(session.secret_key, params) do
         {:ok, encrypted_params} ->
@@ -71,7 +81,7 @@ defmodule ZcaEx.Api.Endpoints.SendMessage do
           case AccountClient.post(session.uid, url, body, creds.user_agent) do
             {:ok, response} ->
               Response.parse(response, session.secret_key)
-              |> extract_msg_id()
+              |> extract_msg_id(client_id)
 
             {:error, reason} ->
               {:error, %Error{message: "Request failed: #{inspect(reason)}", code: nil}}
@@ -110,13 +120,13 @@ defmodule ZcaEx.Api.Endpoints.SendMessage do
   def get_path(:user, false, _has_mentions), do: "/sms"
 
   @doc "Build API params from message content"
-  @spec build_params(map(), String.t(), :user | :group, [map()], Credentials.t()) :: map()
-  def build_params(content, thread_id, thread_type, mentions, creds) do
+  @spec build_params(map(), String.t(), :user | :group, [map()], Credentials.t(), integer()) :: map()
+  def build_params(content, thread_id, thread_type, mentions, creds, client_id) do
     base_params =
       if content[:quote] do
-        build_quote_params(content, thread_id, thread_type, mentions, creds)
+        build_quote_params(content, thread_id, thread_type, mentions, creds, client_id)
       else
-        build_text_params(content, thread_id, thread_type, mentions, creds)
+        build_text_params(content, thread_id, thread_type, mentions, creds, client_id)
       end
 
     base_params
@@ -125,12 +135,12 @@ defmodule ZcaEx.Api.Endpoints.SendMessage do
     |> remove_nil_values()
   end
 
-  defp build_text_params(content, thread_id, thread_type, mentions, creds) do
+  defp build_text_params(content, thread_id, thread_type, mentions, creds, client_id) do
     is_group = thread_type == :group
 
     %{
       message: content.msg,
-      clientId: System.system_time(:millisecond),
+      clientId: client_id,
       mentionInfo: if(mentions != [], do: Jason.encode!(mentions)),
       imei: if(!is_group, do: creds.imei),
       ttl: content[:ttl] || 0,
@@ -140,7 +150,7 @@ defmodule ZcaEx.Api.Endpoints.SendMessage do
     }
   end
 
-  defp build_quote_params(content, thread_id, thread_type, mentions, creds) do
+  defp build_quote_params(content, thread_id, thread_type, mentions, creds, client_id) do
     is_group = thread_type == :group
     quote = content[:quote]
 
@@ -148,7 +158,7 @@ defmodule ZcaEx.Api.Endpoints.SendMessage do
       toid: if(!is_group, do: thread_id),
       grid: if(is_group, do: thread_id),
       message: content.msg,
-      clientId: System.system_time(:millisecond),
+      clientId: client_id,
       mentionInfo: if(mentions != [], do: Jason.encode!(mentions)),
       qmsgOwner: quote[:uid_from],
       qmsgId: quote[:msg_id],
@@ -303,7 +313,19 @@ defmodule ZcaEx.Api.Endpoints.SendMessage do
     |> Map.new()
   end
 
-  defp extract_msg_id({:ok, %{"msgId" => msg_id}}), do: {:ok, %{msg_id: msg_id}}
-  defp extract_msg_id({:ok, data}) when is_map(data), do: {:ok, data}
-  defp extract_msg_id({:error, _} = error), do: error
+  # Generate collision-resistant client ID: milliseconds * 1000 + monotonic counter
+  defp default_client_id do
+    System.system_time(:millisecond) * 1_000 +
+      rem(System.unique_integer([:positive, :monotonic]), 1_000)
+  end
+
+  defp extract_msg_id({:ok, %{"msgId" => msg_id}}, client_id) do
+    {:ok, %{msg_id: msg_id, client_id: client_id}}
+  end
+
+  defp extract_msg_id({:ok, data}, client_id) when is_map(data) do
+    {:ok, Map.put(data, :client_id, client_id)}
+  end
+
+  defp extract_msg_id({:error, _} = error, _client_id), do: error
 end
