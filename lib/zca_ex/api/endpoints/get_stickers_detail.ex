@@ -55,7 +55,8 @@ defmodule ZcaEx.Api.Endpoints.GetStickersDetail do
 
   @doc "Validate sticker IDs"
   @spec validate_sticker_ids([integer()]) :: :ok | {:error, Error.t()}
-  def validate_sticker_ids([]), do: {:error, %Error{message: "sticker_ids cannot be empty", code: nil}}
+  def validate_sticker_ids([]),
+    do: {:error, %Error{message: "sticker_ids cannot be empty", code: nil}}
 
   def validate_sticker_ids(sticker_ids) when is_list(sticker_ids) do
     if Enum.all?(sticker_ids, &(is_integer(&1) and &1 > 0)) do
@@ -96,8 +97,11 @@ defmodule ZcaEx.Api.Endpoints.GetStickersDetail do
       uri: data["uri"] || data[:uri],
       fkey: data["fkey"] || data[:fkey],
       status: data["status"] || data[:status],
-      sticker_url: data["stickerUrl"] || data[:stickerUrl] || data["sticker_url"] || data[:sticker_url],
-      sticker_sprite_url: data["stickerSpriteUrl"] || data[:stickerSpriteUrl] || data["sticker_sprite_url"] || data[:sticker_sprite_url]
+      sticker_url:
+        data["stickerUrl"] || data[:stickerUrl] || data["sticker_url"] || data[:sticker_url],
+      sticker_sprite_url:
+        data["stickerSpriteUrl"] || data[:stickerSpriteUrl] || data["sticker_sprite_url"] ||
+          data[:sticker_sprite_url]
     }
   end
 

@@ -96,7 +96,8 @@ defmodule ZcaEx.Api.Endpoints.GetRelatedFriendGroup do
         {:ok, %{friend_ids: json, imei: imei}}
 
       {:error, reason} ->
-        {:error, Error.new(:api, "Failed to encode friend_ids: #{inspect(reason)}", code: :invalid_input)}
+        {:error,
+         Error.new(:api, "Failed to encode friend_ids: #{inspect(reason)}", code: :invalid_input)}
     end
   end
 

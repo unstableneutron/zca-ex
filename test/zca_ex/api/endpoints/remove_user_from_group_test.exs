@@ -39,7 +39,8 @@ defmodule ZcaEx.Api.Endpoints.RemoveUserFromGroupTest do
     end
 
     test "builds params with list of member_ids", %{credentials: credentials} do
-      params = RemoveUserFromGroup.build_params("group123", ["user1", "user2", "user3"], credentials)
+      params =
+        RemoveUserFromGroup.build_params("group123", ["user1", "user2", "user3"], credentials)
 
       assert params.grid == "group123"
       assert params.members == ["user1", "user2", "user3"]

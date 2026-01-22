@@ -90,13 +90,22 @@ defmodule ZcaEx.Api.Endpoints.GetGroupMembersInfoTest do
   end
 
   describe "call/3 validation" do
-    test "returns error when member_ids is empty list", %{session: session, credentials: credentials} do
+    test "returns error when member_ids is empty list", %{
+      session: session,
+      credentials: credentials
+    } do
       assert {:error, %ZcaEx.Error{message: "member_id cannot be empty"}} =
                GetGroupMembersInfo.call([], session, credentials)
     end
 
-    test "raises when profile service URL not found", %{session: session, credentials: credentials} do
-      session_no_profile = %{session | zpw_service_map: %{"group" => ["https://groupchat.zalo.me"]}}
+    test "raises when profile service URL not found", %{
+      session: session,
+      credentials: credentials
+    } do
+      session_no_profile = %{
+        session
+        | zpw_service_map: %{"group" => ["https://groupchat.zalo.me"]}
+      }
 
       assert_raise RuntimeError, ~r/Service URL not found for profile/, fn ->
         GetGroupMembersInfo.call("user123", session_no_profile, credentials)

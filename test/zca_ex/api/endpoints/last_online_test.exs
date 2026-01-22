@@ -78,44 +78,44 @@ defmodule ZcaEx.Api.Endpoints.LastOnlineTest do
     test "transforms response with settings and lastOnline" do
       data = %{
         "settings" => %{"show_online_status" => true},
-        "lastOnline" => 1234567890
+        "lastOnline" => 1_234_567_890
       }
 
       result = LastOnline.transform_response(data)
 
       assert result.settings.show_online_status == true
-      assert result.last_online == 1234567890
+      assert result.last_online == 1_234_567_890
     end
 
     test "handles atom keys" do
       data = %{
         settings: %{show_online_status: false},
-        lastOnline: 9876543210
+        lastOnline: 9_876_543_210
       }
 
       result = LastOnline.transform_response(data)
 
       assert result.settings.show_online_status == false
-      assert result.last_online == 9876543210
+      assert result.last_online == 9_876_543_210
     end
 
     test "handles missing settings" do
-      data = %{"lastOnline" => 1234567890}
+      data = %{"lastOnline" => 1_234_567_890}
       result = LastOnline.transform_response(data)
 
       assert result.settings.show_online_status == nil
-      assert result.last_online == 1234567890
+      assert result.last_online == 1_234_567_890
     end
 
     test "handles last_online key variant" do
       data = %{
         "settings" => %{"show_online_status" => true},
-        "last_online" => 1234567890
+        "last_online" => 1_234_567_890
       }
 
       result = LastOnline.transform_response(data)
 
-      assert result.last_online == 1234567890
+      assert result.last_online == 1_234_567_890
     end
   end
 
@@ -132,7 +132,10 @@ defmodule ZcaEx.Api.Endpoints.LastOnlineTest do
       assert error.message =~ "user_id must be a non-empty string"
     end
 
-    test "returns error when user_id is not a string", %{session: session, credentials: credentials} do
+    test "returns error when user_id is not a string", %{
+      session: session,
+      credentials: credentials
+    } do
       assert {:error, error} = LastOnline.get(123, session, credentials)
       assert error.code == :invalid_input
       assert error.message =~ "user_id must be a non-empty string"

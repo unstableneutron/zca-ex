@@ -47,7 +47,8 @@ defmodule ZcaEx.Api.Endpoints.BlockViewFeed do
                 end
 
               {:error, reason} ->
-                {:error, Error.new(:network, "Request failed: #{inspect(reason)}", reason: reason)}
+                {:error,
+                 Error.new(:network, "Request failed: #{inspect(reason)}", reason: reason)}
             end
 
           {:error, _} = error ->

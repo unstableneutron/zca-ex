@@ -136,7 +136,12 @@ defmodule ZcaEx.Api.Endpoints.VotePollTest do
     test "transforms response with string keys" do
       data = %{
         "options" => [
-          %{"option_id" => 1, "content" => "Option A", "vote_count" => 10, "voters" => ["u1", "u2"]},
+          %{
+            "option_id" => 1,
+            "content" => "Option A",
+            "vote_count" => 10,
+            "voters" => ["u1", "u2"]
+          },
           %{"option_id" => 2, "content" => "Option B", "vote_count" => 5, "voters" => ["u3"]}
         ]
       }
@@ -204,12 +209,18 @@ defmodule ZcaEx.Api.Endpoints.VotePollTest do
                VotePoll.call(session, credentials, -5, [1])
     end
 
-    test "returns error when option_ids contains non-integers", %{session: session, credentials: credentials} do
+    test "returns error when option_ids contains non-integers", %{
+      session: session,
+      credentials: credentials
+    } do
       assert {:error, %ZcaEx.Error{message: "option_ids must be a list of integers"}} =
                VotePoll.call(session, credentials, 123, [1, "2"])
     end
 
-    test "returns error when option_ids is not a list", %{session: session, credentials: credentials} do
+    test "returns error when option_ids is not a list", %{
+      session: session,
+      credentials: credentials
+    } do
       assert {:error, %ZcaEx.Error{message: "option_ids must be a list"}} =
                VotePoll.call(session, credentials, 123, 1)
     end

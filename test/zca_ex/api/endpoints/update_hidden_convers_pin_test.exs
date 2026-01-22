@@ -122,7 +122,12 @@ defmodule ZcaEx.Api.Endpoints.UpdateHiddenConversPinTest do
 
   describe "build_url/3" do
     test "builds URL with encrypted params", %{session: session} do
-      url = UpdateHiddenConversPin.build_url("https://conversation.zalo.me", "encryptedParams123", session)
+      url =
+        UpdateHiddenConversPin.build_url(
+          "https://conversation.zalo.me",
+          "encryptedParams123",
+          session
+        )
 
       assert url =~ "https://conversation.zalo.me/api/hiddenconvers/update-pin"
       assert url =~ "params=encryptedParams123"
@@ -145,7 +150,9 @@ defmodule ZcaEx.Api.Endpoints.UpdateHiddenConversPinTest do
     test "returns error for missing service URL", %{session: session, credentials: credentials} do
       session_no_service = %{session | zpw_service_map: %{}}
 
-      assert {:error, error} = UpdateHiddenConversPin.call(session_no_service, credentials, "1234")
+      assert {:error, error} =
+               UpdateHiddenConversPin.call(session_no_service, credentials, "1234")
+
       assert error.message == "conversation service URL not found"
       assert error.code == :service_not_found
     end

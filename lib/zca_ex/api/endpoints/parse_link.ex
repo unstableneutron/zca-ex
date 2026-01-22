@@ -27,7 +27,8 @@ defmodule ZcaEx.Api.Endpoints.ParseLink do
         }
 
   @doc "Parse a link to extract metadata"
-  @spec parse(String.t(), Session.t(), Credentials.t()) :: {:ok, link_metadata()} | {:error, Error.t()}
+  @spec parse(String.t(), Session.t(), Credentials.t()) ::
+          {:ok, link_metadata()} | {:error, Error.t()}
   def parse(link, session, credentials) do
     with :ok <- validate_link(link) do
       url = build_url(session)

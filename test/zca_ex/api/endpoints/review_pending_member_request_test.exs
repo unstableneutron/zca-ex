@@ -80,7 +80,10 @@ defmodule ZcaEx.Api.Endpoints.ReviewPendingMemberRequestTest do
   end
 
   describe "input validation" do
-    test "returns error for empty string member_ids", %{session: session, credentials: credentials} do
+    test "returns error for empty string member_ids", %{
+      session: session,
+      credentials: credentials
+    } do
       result = ReviewPendingMemberRequest.call("group123", "", true, session, credentials)
 
       assert {:error, error} = result
@@ -109,7 +112,13 @@ defmodule ZcaEx.Api.Endpoints.ReviewPendingMemberRequestTest do
 
     test "returns error for string is_approve", %{session: session, credentials: credentials} do
       assert {:error, error} =
-               ReviewPendingMemberRequest.call("group123", ["member1"], "true", session, credentials)
+               ReviewPendingMemberRequest.call(
+                 "group123",
+                 ["member1"],
+                 "true",
+                 session,
+                 credentials
+               )
 
       assert error.code == :invalid_input
       assert error.message =~ "is_approve must be a boolean"
@@ -117,7 +126,13 @@ defmodule ZcaEx.Api.Endpoints.ReviewPendingMemberRequestTest do
 
     test "returns error for atom is_approve", %{session: session, credentials: credentials} do
       assert {:error, error} =
-               ReviewPendingMemberRequest.call("group123", ["member1"], :yes, session, credentials)
+               ReviewPendingMemberRequest.call(
+                 "group123",
+                 ["member1"],
+                 :yes,
+                 session,
+                 credentials
+               )
 
       assert error.code == :invalid_input
       assert error.message =~ "is_approve must be a boolean"
@@ -129,7 +144,13 @@ defmodule ZcaEx.Api.Endpoints.ReviewPendingMemberRequestTest do
       session_no_service = %{session | zpw_service_map: %{}}
 
       assert_raise RuntimeError, ~r/Service URL not found/, fn ->
-        ReviewPendingMemberRequest.call("group123", "user1", true, session_no_service, credentials)
+        ReviewPendingMemberRequest.call(
+          "group123",
+          "user1",
+          true,
+          session_no_service,
+          credentials
+        )
       end
     end
 

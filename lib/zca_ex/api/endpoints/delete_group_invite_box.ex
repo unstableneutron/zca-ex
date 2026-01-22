@@ -97,7 +97,9 @@ defmodule ZcaEx.Api.Endpoints.DeleteGroupInviteBox do
 
   @doc "Validate group_ids"
   @spec validate_group_ids([String.t()]) :: :ok | {:error, Error.t()}
-  def validate_group_ids([]), do: {:error, %Error{message: "Group IDs cannot be empty", code: :invalid_input}}
+  def validate_group_ids([]),
+    do: {:error, %Error{message: "Group IDs cannot be empty", code: :invalid_input}}
+
   def validate_group_ids(_), do: :ok
 
   defp get_service_url(session, service) do

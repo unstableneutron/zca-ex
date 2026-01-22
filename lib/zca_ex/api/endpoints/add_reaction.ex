@@ -31,7 +31,12 @@ defmodule ZcaEx.Api.Endpoints.AddReaction do
     - `{:ok, %{msg_ids: [integer()]}}` on success
     - `{:error, Error.t()}` on failure
   """
-  @spec call(Enums.reaction() | custom_reaction(), reaction_target(), Session.t(), Credentials.t()) ::
+  @spec call(
+          Enums.reaction() | custom_reaction(),
+          reaction_target(),
+          Session.t(),
+          Credentials.t()
+        ) ::
           {:ok, map()} | {:error, ZcaEx.Error.t()}
   def call(reaction, target, session, credentials) do
     {r_type, source, icon} = get_reaction_info(reaction)
@@ -80,7 +85,8 @@ defmodule ZcaEx.Api.Endpoints.AddReaction do
       end
     else
       {:error, reason} ->
-        {:error, %ZcaEx.Error{message: "Failed to encode message payload: #{inspect(reason)}", code: nil}}
+        {:error,
+         %ZcaEx.Error{message: "Failed to encode message payload: #{inspect(reason)}", code: nil}}
     end
   end
 

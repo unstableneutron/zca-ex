@@ -8,9 +8,11 @@ defmodule ZcaEx.WS.ConnectionTest do
     test "when websocket is established, {:done, ref} does NOT disconnect" do
       # Simulate a state where WebSocket upgrade has completed successfully
       ref = make_ref()
+
       state = %{
         ref: ref,
-        websocket: %{some: :websocket_struct},  # non-nil = established
+        # non-nil = established
+        websocket: %{some: :websocket_struct},
         conn: %{mock: :conn},
         account_id: "test_account",
         status: :connected
@@ -27,9 +29,11 @@ defmodule ZcaEx.WS.ConnectionTest do
     test "when websocket is nil, {:done, ref} triggers disconnect with :upgrade_failed" do
       # Simulate a state where HTTP upgrade response came but WebSocket was never established
       ref = make_ref()
+
       state = %{
         ref: ref,
-        websocket: nil,  # nil = NOT established
+        # nil = NOT established
+        websocket: nil,
         conn: %{mock: :conn},
         account_id: "test_account",
         status: :connecting
@@ -45,6 +49,7 @@ defmodule ZcaEx.WS.ConnectionTest do
     test "mismatched ref is ignored" do
       ref = make_ref()
       other_ref = make_ref()
+
       state = %{
         ref: ref,
         websocket: nil,
@@ -65,7 +70,7 @@ defmodule ZcaEx.WS.ConnectionTest do
     # Since handle_response is private, we test by checking behavior
     # The actual implementation is in Connection module
     # For unit testing private functions, we replicate the logic here
-    
+
     case response do
       {:done, ref} when ref == state.ref ->
         if state.websocket == nil do
@@ -75,7 +80,7 @@ defmodule ZcaEx.WS.ConnectionTest do
           # WebSocket established, return unchanged
           state
         end
-        
+
       _ ->
         state
     end

@@ -58,7 +58,10 @@ defmodule ZcaEx.Api.Endpoints.SendLinkTest do
   end
 
   describe "build_params/5" do
-    test "builds user params with toId and mentionInfo", %{credentials: creds, link_metadata: link_metadata} do
+    test "builds user params with toId and mentionInfo", %{
+      credentials: creds,
+      link_metadata: link_metadata
+    } do
       options = %{link: "https://example.com"}
 
       params = SendLink.build_params(options, link_metadata, "user123", :user, creds)
@@ -76,7 +79,10 @@ defmodule ZcaEx.Api.Endpoints.SendLinkTest do
       refute Map.has_key?(params, :grid)
     end
 
-    test "builds group params with grid and imei", %{credentials: creds, link_metadata: link_metadata} do
+    test "builds group params with grid and imei", %{
+      credentials: creds,
+      link_metadata: link_metadata
+    } do
       options = %{link: "https://example.com"}
 
       params = SendLink.build_params(options, link_metadata, "group123", :group, creds)
@@ -88,7 +94,10 @@ defmodule ZcaEx.Api.Endpoints.SendLinkTest do
       refute Map.has_key?(params, :mentionInfo)
     end
 
-    test "uses msg if provided and contains link", %{credentials: creds, link_metadata: link_metadata} do
+    test "uses msg if provided and contains link", %{
+      credentials: creds,
+      link_metadata: link_metadata
+    } do
       options = %{link: "https://example.com", msg: "Check this out https://example.com"}
 
       params = SendLink.build_params(options, link_metadata, "user123", :user, creds)
@@ -96,7 +105,10 @@ defmodule ZcaEx.Api.Endpoints.SendLinkTest do
       assert params.msg == "Check this out https://example.com"
     end
 
-    test "appends link to msg if not already present", %{credentials: creds, link_metadata: link_metadata} do
+    test "appends link to msg if not already present", %{
+      credentials: creds,
+      link_metadata: link_metadata
+    } do
       options = %{link: "https://example.com", msg: "Check this out"}
 
       params = SendLink.build_params(options, link_metadata, "user123", :user, creds)
@@ -134,7 +146,9 @@ defmodule ZcaEx.Api.Endpoints.SendLinkTest do
     end
 
     test "returns error for missing thread_id", %{session: session, credentials: creds} do
-      assert {:error, error} = SendLink.send(%{link: "https://example.com"}, "", :user, session, creds)
+      assert {:error, error} =
+               SendLink.send(%{link: "https://example.com"}, "", :user, session, creds)
+
       assert error.message == "Missing threadId"
     end
   end

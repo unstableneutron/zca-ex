@@ -33,24 +33,40 @@ defmodule ZcaEx.Api.Endpoints.SendDeliveredEvent do
     - `:ok` on success
     - `{:error, Error.t()}` on failure
   """
-  @spec call(boolean(), message_params() | [message_params()], Enums.thread_type(), Session.t(), Credentials.t()) ::
+  @spec call(
+          boolean(),
+          message_params() | [message_params()],
+          Enums.thread_type(),
+          Session.t(),
+          Credentials.t()
+        ) ::
           :ok | {:error, ZcaEx.Error.t()}
   def call(is_seen, messages, thread_type \\ :user, session, credentials)
 
   def call(_is_seen, nil, _thread_type, _session, _credentials) do
-    {:error, %ZcaEx.Error{message: "messages are missing or not in a valid array format", code: nil}}
+    {:error,
+     %ZcaEx.Error{message: "messages are missing or not in a valid array format", code: nil}}
   end
 
   def call(_is_seen, [], _thread_type, _session, _credentials) do
-    {:error, %ZcaEx.Error{message: "messages must contain between 1 and #{@max_messages_per_send} messages", code: nil}}
+    {:error,
+     %ZcaEx.Error{
+       message: "messages must contain between 1 and #{@max_messages_per_send} messages",
+       code: nil
+     }}
   end
 
   def call(is_seen, messages, thread_type, session, credentials) when not is_list(messages) do
     call(is_seen, [messages], thread_type, session, credentials)
   end
 
-  def call(_is_seen, messages, _thread_type, _session, _credentials) when length(messages) > @max_messages_per_send do
-    {:error, %ZcaEx.Error{message: "messages must contain between 1 and #{@max_messages_per_send} messages", code: nil}}
+  def call(_is_seen, messages, _thread_type, _session, _credentials)
+      when length(messages) > @max_messages_per_send do
+    {:error,
+     %ZcaEx.Error{
+       message: "messages must contain between 1 and #{@max_messages_per_send} messages",
+       code: nil
+     }}
   end
 
   def call(is_seen, messages, thread_type, session, credentials) do
@@ -75,7 +91,8 @@ defmodule ZcaEx.Api.Endpoints.SendDeliveredEvent do
     if all_same? do
       :ok
     else
-      {:error, %ZcaEx.Error{message: "All messages must have the same idTo for Group thread", code: nil}}
+      {:error,
+       %ZcaEx.Error{message: "All messages must have the same idTo for Group thread", code: nil}}
     end
   end
 

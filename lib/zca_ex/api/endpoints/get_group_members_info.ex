@@ -86,7 +86,9 @@ defmodule ZcaEx.Api.Endpoints.GetGroupMembersInfo do
   end
 
   @spec validate_member_ids([String.t()]) :: :ok | {:error, Error.t()}
-  defp validate_member_ids([]), do: {:error, %Error{message: "member_id cannot be empty", code: nil}}
+  defp validate_member_ids([]),
+    do: {:error, %Error{message: "member_id cannot be empty", code: nil}}
+
   defp validate_member_ids(_), do: :ok
 
   defp get_service_url(session, service) do

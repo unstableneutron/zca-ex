@@ -44,7 +44,9 @@ defmodule ZcaEx.Api.Endpoints.GetPendingGroupMembers do
 
   @spec validate_group_id(term()) :: :ok | {:error, Error.t()}
   defp validate_group_id(group_id) when is_binary(group_id) and byte_size(group_id) > 0, do: :ok
-  defp validate_group_id(_), do: {:error, %Error{message: "group_id cannot be empty", code: :invalid_input}}
+
+  defp validate_group_id(_),
+    do: {:error, %Error{message: "group_id cannot be empty", code: :invalid_input}}
 
   @doc "Build base URL for get pending group members endpoint"
   @spec build_base_url(Session.t()) :: String.t()

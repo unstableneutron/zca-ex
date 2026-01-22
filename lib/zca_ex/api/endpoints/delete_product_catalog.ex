@@ -52,14 +52,19 @@ defmodule ZcaEx.Api.Endpoints.DeleteProductCatalog do
     end
   end
 
-  defp validate_catalog_id(catalog_id) when is_binary(catalog_id) and byte_size(catalog_id) > 0, do: :ok
-  defp validate_catalog_id(_), do: {:error, Error.new(:api, "catalog_id must be a non-empty string", code: :invalid_input)}
+  defp validate_catalog_id(catalog_id) when is_binary(catalog_id) and byte_size(catalog_id) > 0,
+    do: :ok
 
-  defp validate_and_normalize_product_ids(product_id) when is_binary(product_id) and byte_size(product_id) > 0 do
+  defp validate_catalog_id(_),
+    do: {:error, Error.new(:api, "catalog_id must be a non-empty string", code: :invalid_input)}
+
+  defp validate_and_normalize_product_ids(product_id)
+       when is_binary(product_id) and byte_size(product_id) > 0 do
     {:ok, [product_id]}
   end
 
-  defp validate_and_normalize_product_ids(product_ids) when is_list(product_ids) and length(product_ids) > 0 do
+  defp validate_and_normalize_product_ids(product_ids)
+       when is_list(product_ids) and length(product_ids) > 0 do
     if Enum.all?(product_ids, &(is_binary(&1) and byte_size(&1) > 0)) do
       {:ok, product_ids}
     else
@@ -72,11 +77,17 @@ defmodule ZcaEx.Api.Endpoints.DeleteProductCatalog do
   end
 
   defp validate_and_normalize_product_ids("") do
-    {:error, Error.new(:api, "product_ids must be a non-empty string or non-empty list of strings", code: :invalid_input)}
+    {:error,
+     Error.new(:api, "product_ids must be a non-empty string or non-empty list of strings",
+       code: :invalid_input
+     )}
   end
 
   defp validate_and_normalize_product_ids(_) do
-    {:error, Error.new(:api, "product_ids must be a non-empty string or non-empty list of strings", code: :invalid_input)}
+    {:error,
+     Error.new(:api, "product_ids must be a non-empty string or non-empty list of strings",
+       code: :invalid_input
+     )}
   end
 
   @doc false

@@ -168,7 +168,8 @@ defmodule ZcaEx.CookieJar.Jar do
       http_only: get_bool(map, ["httpOnly", "http_only"]),
       host_only: get_bool(map, ["hostOnly", "host_only"]),
       expires_at: get_int(map, ["expiresAt", "expires_at"]),
-      creation_time: get_int(map, ["creationTime", "creation_time"]) || System.system_time(:second),
+      creation_time:
+        get_int(map, ["creationTime", "creation_time"]) || System.system_time(:second),
       same_site: get_same_site(map, ["sameSite", "same_site"]),
       max_age: get_int(map, ["maxAge", "max_age"])
     }

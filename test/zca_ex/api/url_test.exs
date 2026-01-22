@@ -91,7 +91,8 @@ defmodule ZcaEx.Api.UrlTest do
     end
 
     test "new params override existing URL params" do
-      result = Url.build("https://api.zalo.me/test?foo=old", %{"foo" => "new"}, api_version: false)
+      result =
+        Url.build("https://api.zalo.me/test?foo=old", %{"foo" => "new"}, api_version: false)
 
       uri = URI.parse(result)
       params = URI.decode_query(uri.query)
@@ -100,7 +101,10 @@ defmodule ZcaEx.Api.UrlTest do
     end
 
     test "filters out nil values from params" do
-      result = Url.build("https://api.zalo.me/test", %{"keep" => "value", "drop" => nil}, api_version: false)
+      result =
+        Url.build("https://api.zalo.me/test", %{"keep" => "value", "drop" => nil},
+          api_version: false
+        )
 
       uri = URI.parse(result)
       params = URI.decode_query(uri.query)

@@ -68,7 +68,12 @@ defmodule ZcaEx.Api.Endpoints.GetAutoDeleteChatTest do
     test "transforms convers with string keys" do
       data = %{
         "convers" => [
-          %{"destId" => "user123", "isGroup" => false, "ttl" => 86400, "createdAt" => 1_700_000_000}
+          %{
+            "destId" => "user123",
+            "isGroup" => false,
+            "ttl" => 86400,
+            "createdAt" => 1_700_000_000
+          }
         ]
       }
 
@@ -148,7 +153,10 @@ defmodule ZcaEx.Api.Endpoints.GetAutoDeleteChatTest do
     end
 
     test "raises when conversation service missing", %{session: session, credentials: credentials} do
-      session_wrong_service = %{session | zpw_service_map: %{"group" => ["https://group.zalo.me"]}}
+      session_wrong_service = %{
+        session
+        | zpw_service_map: %{"group" => ["https://group.zalo.me"]}
+      }
 
       assert_raise RuntimeError, ~r/Service URL not found for conversation/, fn ->
         GetAutoDeleteChat.call(session_wrong_service, credentials)

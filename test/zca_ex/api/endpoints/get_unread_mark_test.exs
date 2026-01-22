@@ -62,6 +62,7 @@ defmodule ZcaEx.Api.Endpoints.GetUnreadMarkTest do
         "convsUser" => [%{"id" => "u1"}],
         "status" => 1
       }
+
       response = Fixtures.build_success_response(response_data, session.secret_key)
 
       expect(AccountClientMock, :get, fn _account_id, _url, _user_agent, _headers ->
@@ -70,7 +71,8 @@ defmodule ZcaEx.Api.Endpoints.GetUnreadMarkTest do
 
       result = GetUnreadMark.get(session, credentials)
 
-      assert {:ok, %{convs_group: [%{"id" => "g1"}], convs_user: [%{"id" => "u1"}], status: 1}} = result
+      assert {:ok, %{convs_group: [%{"id" => "g1"}], convs_user: [%{"id" => "u1"}], status: 1}} =
+               result
     end
 
     test "returns empty lists when data is missing", %{session: session, credentials: credentials} do
@@ -94,6 +96,7 @@ defmodule ZcaEx.Api.Endpoints.GetUnreadMarkTest do
         "convsUser" => [%{"id" => "user1", "ts" => 2_000_000}],
         "status" => 1
       }
+
       response = Fixtures.build_success_response(response_data, session.secret_key)
 
       expect(AccountClientMock, :get, fn _account_id, url, _user_agent, _headers ->

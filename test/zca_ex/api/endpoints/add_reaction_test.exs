@@ -69,7 +69,8 @@ defmodule ZcaEx.Api.Endpoints.AddReactionTest do
 
       for reaction <- [:haha, :wow, :cry, :angry, :kiss] do
         expect(AccountClientMock, :post, fn _account_id, _url, _body, _user_agent, _headers ->
-          {:ok, %Response{status: response.status, body: response.body, headers: response.headers}}
+          {:ok,
+           %Response{status: response.status, body: response.body, headers: response.headers}}
         end)
 
         result = AddReaction.call(reaction, target, session, credentials)

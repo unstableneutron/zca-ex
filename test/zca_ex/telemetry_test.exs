@@ -93,7 +93,9 @@ defmodule ZcaEx.TelemetryTest do
     test "emits correct event with bytes and message type" do
       Telemetry.ws_message_received("acc_123", 256, :text)
 
-      assert_receive {:telemetry_event, [:zca_ex, :ws, :message, :received], measurements, metadata}
+      assert_receive {:telemetry_event, [:zca_ex, :ws, :message, :received], measurements,
+                      metadata}
+
       assert is_integer(measurements.system_time)
       assert measurements.bytes == 256
       assert metadata.account_id == "acc_123"
@@ -116,7 +118,9 @@ defmodule ZcaEx.TelemetryTest do
     test "emits correct event with method and host" do
       Telemetry.http_request_start("acc_123", :post, "https://api.zalo.me/v1/messages")
 
-      assert_receive {:telemetry_event, [:zca_ex, :http, :request, :start], measurements, metadata}
+      assert_receive {:telemetry_event, [:zca_ex, :http, :request, :start], measurements,
+                      metadata}
+
       assert is_integer(measurements.system_time)
       assert metadata.account_id == "acc_123"
       assert metadata.method == :post

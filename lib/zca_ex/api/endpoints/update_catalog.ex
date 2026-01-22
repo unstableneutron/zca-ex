@@ -52,11 +52,18 @@ defmodule ZcaEx.Api.Endpoints.UpdateCatalog do
     end
   end
 
-  defp validate_catalog_id(catalog_id) when is_binary(catalog_id) and byte_size(catalog_id) > 0, do: :ok
-  defp validate_catalog_id(_), do: {:error, Error.new(:api, "catalog_id must be a non-empty string", code: :invalid_input)}
+  defp validate_catalog_id(catalog_id) when is_binary(catalog_id) and byte_size(catalog_id) > 0,
+    do: :ok
 
-  defp validate_catalog_name(catalog_name) when is_binary(catalog_name) and byte_size(catalog_name) > 0, do: :ok
-  defp validate_catalog_name(_), do: {:error, Error.new(:api, "catalog_name must be a non-empty string", code: :invalid_input)}
+  defp validate_catalog_id(_),
+    do: {:error, Error.new(:api, "catalog_id must be a non-empty string", code: :invalid_input)}
+
+  defp validate_catalog_name(catalog_name)
+       when is_binary(catalog_name) and byte_size(catalog_name) > 0,
+       do: :ok
+
+  defp validate_catalog_name(_),
+    do: {:error, Error.new(:api, "catalog_name must be a non-empty string", code: :invalid_input)}
 
   @doc false
   def build_params(catalog_id, catalog_name) do

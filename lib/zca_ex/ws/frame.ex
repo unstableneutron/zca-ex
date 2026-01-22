@@ -9,7 +9,8 @@ defmodule ZcaEx.WS.Frame do
   - remaining: JSON UTF-8 string
   """
 
-  @type header :: {version :: non_neg_integer(), cmd :: non_neg_integer(), sub_cmd :: non_neg_integer()}
+  @type header ::
+          {version :: non_neg_integer(), cmd :: non_neg_integer(), sub_cmd :: non_neg_integer()}
   @type payload :: map()
 
   @header_size 4

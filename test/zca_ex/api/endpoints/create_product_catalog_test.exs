@@ -30,7 +30,8 @@ defmodule ZcaEx.Api.Endpoints.CreateProductCatalogTest do
 
   describe "build_params/5" do
     test "builds correct params with photos" do
-      params = CreateProductCatalog.build_params("cat1", "Product", "100000", "Desc", ["url1", "url2"])
+      params =
+        CreateProductCatalog.build_params("cat1", "Product", "100000", "Desc", ["url1", "url2"])
 
       assert params.catalog_id == "cat1"
       assert params.product_name == "Product"
@@ -102,7 +103,16 @@ defmodule ZcaEx.Api.Endpoints.CreateProductCatalogTest do
 
     test "returns error for missing service URL", %{session: session, credentials: credentials} do
       session_no_service = %{session | zpw_service_map: %{}}
-      result = CreateProductCatalog.create("cat1", "Product", "100", "Desc", session_no_service, credentials)
+
+      result =
+        CreateProductCatalog.create(
+          "cat1",
+          "Product",
+          "100",
+          "Desc",
+          session_no_service,
+          credentials
+        )
 
       assert {:error, error} = result
       assert error.message == "catalog service URL not found"
@@ -111,8 +121,20 @@ defmodule ZcaEx.Api.Endpoints.CreateProductCatalogTest do
   end
 
   describe "create/7 validation" do
-    test "returns error for non-list product_photos", %{session: session, credentials: credentials} do
-      result = CreateProductCatalog.create("cat1", "Product", "100", "Desc", "not-a-list", session, credentials)
+    test "returns error for non-list product_photos", %{
+      session: session,
+      credentials: credentials
+    } do
+      result =
+        CreateProductCatalog.create(
+          "cat1",
+          "Product",
+          "100",
+          "Desc",
+          "not-a-list",
+          session,
+          credentials
+        )
 
       assert {:error, error} = result
       assert error.message == "product_photos must be a list"
@@ -121,7 +143,17 @@ defmodule ZcaEx.Api.Endpoints.CreateProductCatalogTest do
 
     test "returns error for too many photos", %{session: session, credentials: credentials} do
       photos = ["url1", "url2", "url3", "url4", "url5", "url6"]
-      result = CreateProductCatalog.create("cat1", "Product", "100", "Desc", photos, session, credentials)
+
+      result =
+        CreateProductCatalog.create(
+          "cat1",
+          "Product",
+          "100",
+          "Desc",
+          photos,
+          session,
+          credentials
+        )
 
       assert {:error, error} = result
       assert error.message == "product_photos must have at most 5 items"
@@ -131,15 +163,38 @@ defmodule ZcaEx.Api.Endpoints.CreateProductCatalogTest do
     test "accepts exactly 5 photos", %{session: session, credentials: credentials} do
       photos = ["url1", "url2", "url3", "url4", "url5"]
       session_no_service = %{session | zpw_service_map: %{}}
-      result = CreateProductCatalog.create("cat1", "Product", "100", "Desc", photos, session_no_service, credentials)
+
+      result =
+        CreateProductCatalog.create(
+          "cat1",
+          "Product",
+          "100",
+          "Desc",
+          photos,
+          session_no_service,
+          credentials
+        )
 
       assert {:error, error} = result
       assert error.code == :service_not_found
     end
 
-    test "returns error for non-string items in product_photos", %{session: session, credentials: credentials} do
+    test "returns error for non-string items in product_photos", %{
+      session: session,
+      credentials: credentials
+    } do
       photos = ["url1", 123, "url3"]
-      result = CreateProductCatalog.create("cat1", "Product", "100", "Desc", photos, session, credentials)
+
+      result =
+        CreateProductCatalog.create(
+          "cat1",
+          "Product",
+          "100",
+          "Desc",
+          photos,
+          session,
+          credentials
+        )
 
       assert {:error, error} = result
       assert error.message == "product_photos must contain only strings"

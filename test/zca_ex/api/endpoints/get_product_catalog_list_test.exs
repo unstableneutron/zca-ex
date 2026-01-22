@@ -98,7 +98,10 @@ defmodule ZcaEx.Api.Endpoints.GetProductCatalogListTest do
   end
 
   describe "list/4 validation" do
-    test "returns error for empty catalog_id with opts", %{session: session, credentials: credentials} do
+    test "returns error for empty catalog_id with opts", %{
+      session: session,
+      credentials: credentials
+    } do
       result = GetProductCatalogList.list("", [limit: 50], session, credentials)
 
       assert {:error, error} = result
@@ -106,7 +109,10 @@ defmodule ZcaEx.Api.Endpoints.GetProductCatalogListTest do
       assert error.code == :invalid_input
     end
 
-    test "returns error for missing service URL with opts", %{session: session, credentials: credentials} do
+    test "returns error for missing service URL with opts", %{
+      session: session,
+      credentials: credentials
+    } do
       session_no_service = %{session | zpw_service_map: %{}}
       result = GetProductCatalogList.list("cat1", [limit: 50], session_no_service, credentials)
 
@@ -139,7 +145,10 @@ defmodule ZcaEx.Api.Endpoints.GetProductCatalogListTest do
       assert error.code == :invalid_input
     end
 
-    test "returns error for invalid version_catalog", %{session: session, credentials: credentials} do
+    test "returns error for invalid version_catalog", %{
+      session: session,
+      credentials: credentials
+    } do
       result = GetProductCatalogList.list("cat1", [version_catalog: -1], session, credentials)
 
       assert {:error, error} = result
@@ -147,7 +156,10 @@ defmodule ZcaEx.Api.Endpoints.GetProductCatalogListTest do
       assert error.code == :invalid_input
     end
 
-    test "returns error for invalid last_product_id", %{session: session, credentials: credentials} do
+    test "returns error for invalid last_product_id", %{
+      session: session,
+      credentials: credentials
+    } do
       result = GetProductCatalogList.list("cat1", [last_product_id: ""], session, credentials)
 
       assert {:error, error} = result
@@ -157,7 +169,14 @@ defmodule ZcaEx.Api.Endpoints.GetProductCatalogListTest do
 
     test "accepts valid integer last_product_id", %{session: session, credentials: credentials} do
       session_no_service = %{session | zpw_service_map: %{}}
-      result = GetProductCatalogList.list("cat1", [last_product_id: 123], session_no_service, credentials)
+
+      result =
+        GetProductCatalogList.list(
+          "cat1",
+          [last_product_id: 123],
+          session_no_service,
+          credentials
+        )
 
       assert {:error, error} = result
       assert error.code == :service_not_found
@@ -165,7 +184,14 @@ defmodule ZcaEx.Api.Endpoints.GetProductCatalogListTest do
 
     test "accepts valid string last_product_id", %{session: session, credentials: credentials} do
       session_no_service = %{session | zpw_service_map: %{}}
-      result = GetProductCatalogList.list("cat1", [last_product_id: "prod123"], session_no_service, credentials)
+
+      result =
+        GetProductCatalogList.list(
+          "cat1",
+          [last_product_id: "prod123"],
+          session_no_service,
+          credentials
+        )
 
       assert {:error, error} = result
       assert error.code == :service_not_found

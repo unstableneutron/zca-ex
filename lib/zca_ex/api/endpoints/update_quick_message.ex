@@ -86,9 +86,14 @@ defmodule ZcaEx.Api.Endpoints.UpdateQuickMessage do
 
   defp get_service_url(session) do
     case get_in(session.zpw_service_map, ["quick_message"]) do
-      [url | _] when is_binary(url) -> {:ok, url}
-      url when is_binary(url) -> {:ok, url}
-      _ -> {:error, Error.new(:api, "quick_message service URL not found", code: :service_not_found)}
+      [url | _] when is_binary(url) ->
+        {:ok, url}
+
+      url when is_binary(url) ->
+        {:ok, url}
+
+      _ ->
+        {:error, Error.new(:api, "quick_message service URL not found", code: :service_not_found)}
     end
   end
 

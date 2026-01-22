@@ -114,7 +114,8 @@ defmodule ZcaEx.Api.Endpoints.GetAliasList do
 
     %{
       items: transformed_items,
-      update_time: data["updateTime"] || data[:updateTime] || data["update_time"] || data[:update_time]
+      update_time:
+        data["updateTime"] || data[:updateTime] || data["update_time"] || data[:update_time]
     }
   end
 

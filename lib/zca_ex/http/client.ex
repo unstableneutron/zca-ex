@@ -32,9 +32,11 @@ defmodule ZcaEx.HTTP.Client do
     case Req.request(opts) do
       {:ok, %Req.Response{status: status, headers: headers, body: body}} ->
         # Convert headers from map to list format for compatibility
-        header_list = Enum.flat_map(headers, fn {k, v} -> 
-          if is_list(v), do: Enum.map(v, &{k, &1}), else: [{k, v}]
-        end)
+        header_list =
+          Enum.flat_map(headers, fn {k, v} ->
+            if is_list(v), do: Enum.map(v, &{k, &1}), else: [{k, v}]
+          end)
+
         {:ok, %Response{status: status, headers: header_list, body: body}}
 
       {:error, reason} ->
@@ -74,7 +76,8 @@ defmodule ZcaEx.HTTP.Client do
       {"accept-language", "en-US,en;q=0.9"},
       {"origin", "https://chat.zalo.me"},
       {"referer", "https://chat.zalo.me/"},
-      {"sec-ch-ua", "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\""},
+      {"sec-ch-ua",
+       "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\""},
       {"sec-ch-ua-mobile", "?0"},
       {"sec-ch-ua-platform", "\"macOS\""},
       {"sec-fetch-dest", "empty"},

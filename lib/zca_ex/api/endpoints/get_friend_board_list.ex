@@ -94,9 +94,14 @@ defmodule ZcaEx.Api.Endpoints.GetFriendBoardList do
 
   defp get_service_url(session) do
     case get_in(session.zpw_service_map, ["friend_board"]) do
-      [url | _] when is_binary(url) -> {:ok, url}
-      url when is_binary(url) -> {:ok, url}
-      _ -> {:error, Error.new(:api, "friend_board service URL not found", code: :service_not_found)}
+      [url | _] when is_binary(url) ->
+        {:ok, url}
+
+      url when is_binary(url) ->
+        {:ok, url}
+
+      _ ->
+        {:error, Error.new(:api, "friend_board service URL not found", code: :service_not_found)}
     end
   end
 end

@@ -49,7 +49,9 @@ defmodule ZcaEx.Api.Endpoints.DisableGroupLink do
   @doc "Validate group_id is non-empty"
   @spec validate_group_id(String.t()) :: :ok | {:error, Error.t()}
   def validate_group_id(group_id) when is_binary(group_id) and byte_size(group_id) > 0, do: :ok
-  def validate_group_id(_), do: {:error, %Error{message: "group_id cannot be empty", code: :invalid_input}}
+
+  def validate_group_id(_),
+    do: {:error, %Error{message: "group_id cannot be empty", code: :invalid_input}}
 
   @doc "Build URL for disable group link endpoint with encrypted params"
   @spec build_url(Session.t(), String.t()) :: String.t()

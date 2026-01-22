@@ -30,7 +30,8 @@ defmodule ZcaEx.Api.Endpoints.EditNoteTest do
 
   describe "build_params/5" do
     test "builds correct params with pin? = false (pinAct = 2)", %{credentials: credentials} do
-      assert {:ok, params} = EditNote.build_params("group123", "topic456", "Updated Note", false, credentials)
+      assert {:ok, params} =
+               EditNote.build_params("group123", "topic456", "Updated Note", false, credentials)
 
       assert params.grid == "group123"
       assert params.topicId == "topic456"
@@ -46,7 +47,8 @@ defmodule ZcaEx.Api.Endpoints.EditNoteTest do
     end
 
     test "builds correct params with pin? = true (pinAct = 1)", %{credentials: credentials} do
-      assert {:ok, params} = EditNote.build_params("group123", "topic456", "Pinned Note", true, credentials)
+      assert {:ok, params} =
+               EditNote.build_params("group123", "topic456", "Pinned Note", true, credentials)
 
       assert params.pinAct == 1
       assert params.topicId == "topic456"
@@ -54,13 +56,21 @@ defmodule ZcaEx.Api.Endpoints.EditNoteTest do
     end
 
     test "does not include src field (unlike CreateNote)", %{credentials: credentials} do
-      assert {:ok, params} = EditNote.build_params("group123", "topic456", "Note", false, credentials)
+      assert {:ok, params} =
+               EditNote.build_params("group123", "topic456", "Note", false, credentials)
 
       refute Map.has_key?(params, :src)
     end
 
     test "encodes title with special characters", %{credentials: credentials} do
-      assert {:ok, params} = EditNote.build_params("group123", "topic456", "Note with \"quotes\" & symbols", false, credentials)
+      assert {:ok, params} =
+               EditNote.build_params(
+                 "group123",
+                 "topic456",
+                 "Note with \"quotes\" & symbols",
+                 false,
+                 credentials
+               )
 
       assert params.params == ~s({"title":"Note with \\"quotes\\" & symbols"})
     end

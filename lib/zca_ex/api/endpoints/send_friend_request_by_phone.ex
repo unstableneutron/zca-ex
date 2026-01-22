@@ -86,27 +86,31 @@ defmodule ZcaEx.Api.Endpoints.SendFriendRequestByPhone do
     with {:ok, user} <- find_user(session, credentials, phone_number) do
       # Short-circuit if no global_id to search pending requests
       if user.global_id == "" do
-        {:ok, %{
-          user: user,
-          can_send_request: user.uid != "" and user.uid != nil,
-          pending_since: nil
-        }}
+        {:ok,
+         %{
+           user: user,
+           can_send_request: user.uid != "" and user.uid != nil,
+           pending_since: nil
+         }}
       else
         case check_pending_requests(user.global_id, session, credentials) do
           {:ok, {uid, pending_info}} ->
             merged_user = merge_user_info(user, uid, pending_info)
-            {:ok, %{
-              user: merged_user,
-              can_send_request: merged_user.uid != "",
-              pending_since: get_in(pending_info, ["fReqInfo", "time"])
-            }}
+
+            {:ok,
+             %{
+               user: merged_user,
+               can_send_request: merged_user.uid != "",
+               pending_since: get_in(pending_info, ["fReqInfo", "time"])
+             }}
 
           :not_pending ->
-            {:ok, %{
-              user: user,
-              can_send_request: user.uid != "" and user.uid != nil,
-              pending_since: nil
-            }}
+            {:ok,
+             %{
+               user: user,
+               can_send_request: user.uid != "" and user.uid != nil,
+               pending_since: nil
+             }}
 
           {:error, _} = error ->
             error
@@ -125,7 +129,9 @@ defmodule ZcaEx.Api.Endpoints.SendFriendRequestByPhone do
       {:error, %Error{code: 216}} ->
         # Mask phone number in error message for privacy
         masked = mask_phone(phone_number)
-        {:error, %Error{code: :user_not_found, message: "No user found with phone number: #{masked}"}}
+
+        {:error,
+         %Error{code: :user_not_found, message: "No user found with phone number: #{masked}"}}
 
       {:error, _} = error ->
         error
@@ -167,10 +173,12 @@ defmodule ZcaEx.Api.Endpoints.SendFriendRequestByPhone do
           :not_pending ->
             # Don't expose globalId in error message for privacy
             name = user.zalo_name || user.display_name || "(unknown)"
-            {:error, %Error{
-              code: :user_id_hidden,
-              message: "User '#{name}' found but ID is hidden due to privacy settings"
-            }}
+
+            {:error,
+             %Error{
+               code: :user_id_hidden,
+               message: "User '#{name}' found but ID is hidden due to privacy settings"
+             }}
 
           {:error, _} = error ->
             error
@@ -186,8 +194,8 @@ defmodule ZcaEx.Api.Endpoints.SendFriendRequestByPhone do
       {:ok, pending_map} when is_map(pending_map) ->
         # Find by globalId, return both the map key (userId) and info
         case Enum.find(pending_map, fn {_uid, info} ->
-          info["globalId"] == global_id
-        end) do
+               info["globalId"] == global_id
+             end) do
           {uid, info} -> {:ok, {uid, info}}
           nil -> :not_pending
         end
@@ -203,11 +211,12 @@ defmodule ZcaEx.Api.Endpoints.SendFriendRequestByPhone do
   end
 
   defp merge_user_info(user, uid_from_key, pending_info) do
-    %{user |
-      uid: uid_from_key || pending_info["userId"] || user.uid,
-      zalo_name: pending_info["zaloName"] || user.zalo_name,
-      display_name: pending_info["displayName"] || user.display_name,
-      avatar: pending_info["avatar"] || user.avatar
+    %{
+      user
+      | uid: uid_from_key || pending_info["userId"] || user.uid,
+        zalo_name: pending_info["zaloName"] || user.zalo_name,
+        display_name: pending_info["displayName"] || user.display_name,
+        avatar: pending_info["avatar"] || user.avatar
     }
   end
 

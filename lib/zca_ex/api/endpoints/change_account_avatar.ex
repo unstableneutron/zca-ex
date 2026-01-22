@@ -63,7 +63,9 @@ defmodule ZcaEx.Api.Endpoints.ChangeAccountAvatar do
   @spec validate_image_data(term()) :: :ok | {:error, Error.t()}
   def validate_image_data(data) when is_binary(data) and byte_size(data) > 0, do: :ok
   def validate_image_data(nil), do: {:error, %Error{message: "Image data is required", code: nil}}
-  def validate_image_data(<<>>), do: {:error, %Error{message: "Image data cannot be empty", code: nil}}
+
+  def validate_image_data(<<>>),
+    do: {:error, %Error{message: "Image data cannot be empty", code: nil}}
 
   def validate_image_data(_),
     do: {:error, %Error{message: "Image data must be a binary", code: nil}}
@@ -83,7 +85,13 @@ defmodule ZcaEx.Api.Endpoints.ChangeAccountAvatar do
   end
 
   @doc "Build params for encryption"
-  @spec build_params(String.t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), String.t()) ::
+  @spec build_params(
+          String.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          String.t()
+        ) ::
           map()
   def build_params(uid, width, height, size, language) do
     formatted_time = format_timestamp(System.system_time(:millisecond))

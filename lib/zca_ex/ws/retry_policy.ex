@@ -76,7 +76,9 @@ defmodule ZcaEx.WS.RetryPolicy do
 
       true ->
         policy = maybe_rotate_endpoint(policy)
-        delay = calculate_delay(policy.endpoint_attempts, policy.base_delay_ms, policy.max_delay_ms)
+
+        delay =
+          calculate_delay(policy.endpoint_attempts, policy.base_delay_ms, policy.max_delay_ms)
 
         updated_policy = %{
           policy

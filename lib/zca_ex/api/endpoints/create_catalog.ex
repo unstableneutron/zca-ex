@@ -50,7 +50,9 @@ defmodule ZcaEx.Api.Endpoints.CreateCatalog do
   end
 
   defp validate_catalog_name(name) when is_binary(name) and byte_size(name) > 0, do: :ok
-  defp validate_catalog_name(_), do: {:error, Error.new(:api, "catalog_name must be a non-empty string", code: :invalid_input)}
+
+  defp validate_catalog_name(_),
+    do: {:error, Error.new(:api, "catalog_name must be a non-empty string", code: :invalid_input)}
 
   @doc false
   def build_params(catalog_name) do

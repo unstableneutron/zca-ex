@@ -93,8 +93,11 @@ defmodule ZcaEx.Api.Endpoints.GetListReminder do
     }
 
     case Jason.encode(object_data) do
-      {:ok, json} -> {:ok, %{objectData: json}}
-      {:error, reason} -> {:error, %Error{message: "Failed to encode params: #{inspect(reason)}", code: nil}}
+      {:ok, json} ->
+        {:ok, %{objectData: json}}
+
+      {:error, reason} ->
+        {:error, %Error{message: "Failed to encode params: #{inspect(reason)}", code: nil}}
     end
   end
 
@@ -121,8 +124,11 @@ defmodule ZcaEx.Api.Endpoints.GetListReminder do
     case Map.get(data, "data") || Map.get(data, :data) do
       json_string when is_binary(json_string) ->
         case Jason.decode(json_string) do
-          {:ok, parsed} -> {:ok, parsed}
-          {:error, reason} -> {:error, %Error{message: "Failed to parse data field: #{inspect(reason)}", code: nil}}
+          {:ok, parsed} ->
+            {:ok, parsed}
+
+          {:error, reason} ->
+            {:error, %Error{message: "Failed to parse data field: #{inspect(reason)}", code: nil}}
         end
 
       list when is_list(list) ->

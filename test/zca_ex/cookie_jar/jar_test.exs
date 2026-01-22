@@ -8,13 +8,15 @@ defmodule ZcaEx.CookieJar.JarTest do
     account_id = System.unique_integer([:positive, :monotonic])
     # Start the CookieJar for this test - Registry is already started by Application
     {:ok, _pid} = CookieJar.start_link(account_id: account_id)
-    on_exit(fn -> 
+
+    on_exit(fn ->
       try do
         GenServer.stop({:via, Registry, {ZcaEx.Registry, {:cookie_jar, account_id}}})
       catch
         :exit, _ -> :ok
       end
     end)
+
     {:ok, account_id: account_id}
   end
 
@@ -179,6 +181,7 @@ defmodule ZcaEx.CookieJar.JarTest do
   describe "initial cookies option" do
     test "starts with pre-loaded cookies" do
       account_id = System.unique_integer([:positive, :monotonic])
+
       cookies = [
         %{
           "name" => "preloaded",
@@ -199,7 +202,13 @@ defmodule ZcaEx.CookieJar.JarTest do
   describe "RFC6265 compliance" do
     test "Max-Age takes precedence over Expires", %{account_id: account_id} do
       uri = URI.parse("https://example.com/")
-      :ok = CookieJar.store(account_id, uri, "test=value; Max-Age=3600; Expires=Thu, 01 Jan 1970 00:00:00 GMT")
+
+      :ok =
+        CookieJar.store(
+          account_id,
+          uri,
+          "test=value; Max-Age=3600; Expires=Thu, 01 Jan 1970 00:00:00 GMT"
+        )
 
       assert CookieJar.get_cookie_string(account_id, uri) == "test=value"
     end
@@ -241,7 +250,9 @@ defmodule ZcaEx.CookieJar.JarTest do
       uri = URI.parse("https://example.com/api/v1/endpoint")
       :ok = CookieJar.store(account_id, uri, "test=value")
 
-      assert CookieJar.get_cookie_string(account_id, "https://example.com/api/v1/other") == "test=value"
+      assert CookieJar.get_cookie_string(account_id, "https://example.com/api/v1/other") ==
+               "test=value"
+
       assert CookieJar.get_cookie_string(account_id, "https://example.com/api/other") == ""
     end
 

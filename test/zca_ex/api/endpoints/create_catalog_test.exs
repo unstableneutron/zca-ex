@@ -64,7 +64,10 @@ defmodule ZcaEx.Api.Endpoints.CreateCatalogTest do
       assert error.code == :invalid_input
     end
 
-    test "returns error for non-string catalog_name", %{session: session, credentials: credentials} do
+    test "returns error for non-string catalog_name", %{
+      session: session,
+      credentials: credentials
+    } do
       result = CreateCatalog.create(123, session, credentials)
 
       assert {:error, error} = result

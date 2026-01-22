@@ -119,7 +119,16 @@ defmodule ZcaEx.CookieJar.Policy do
     end
   end
 
-  @known_second_level_tlds ["co.uk", "com.au", "co.nz", "co.jp", "com.br", "com.vn", "edu.vn", "gov.vn"]
+  @known_second_level_tlds [
+    "co.uk",
+    "com.au",
+    "co.nz",
+    "co.jp",
+    "com.br",
+    "com.vn",
+    "edu.vn",
+    "gov.vn"
+  ]
 
   defp second_level_tld?(tld) do
     Enum.any?(@known_second_level_tlds, &String.ends_with?(&1, tld))

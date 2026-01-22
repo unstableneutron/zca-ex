@@ -62,10 +62,14 @@ defmodule ZcaEx.Api.Endpoints.GetCatalogList do
   end
 
   defp validate_limit(limit) when is_integer(limit) and limit > 0, do: :ok
-  defp validate_limit(_), do: {:error, Error.new(:api, "limit must be a positive integer", code: :invalid_input)}
+
+  defp validate_limit(_),
+    do: {:error, Error.new(:api, "limit must be a positive integer", code: :invalid_input)}
 
   defp validate_page(page) when is_integer(page) and page >= 0, do: :ok
-  defp validate_page(_), do: {:error, Error.new(:api, "page must be a non-negative integer", code: :invalid_input)}
+
+  defp validate_page(_),
+    do: {:error, Error.new(:api, "page must be a non-negative integer", code: :invalid_input)}
 
   @doc false
   def build_params(limit, last_product_id, page) do

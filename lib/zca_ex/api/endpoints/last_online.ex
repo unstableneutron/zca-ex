@@ -40,7 +40,8 @@ defmodule ZcaEx.Api.Endpoints.LastOnline do
                 end
 
               {:error, reason} ->
-                {:error, Error.new(:network, "Request failed: #{inspect(reason)}", reason: reason)}
+                {:error,
+                 Error.new(:network, "Request failed: #{inspect(reason)}", reason: reason)}
             end
 
           {:error, _} = error ->
@@ -88,7 +89,8 @@ defmodule ZcaEx.Api.Endpoints.LastOnline do
       settings: %{
         show_online_status: show_online_status
       },
-      last_online: data["lastOnline"] || data[:lastOnline] || data["last_online"] || data[:last_online]
+      last_online:
+        data["lastOnline"] || data[:lastOnline] || data["last_online"] || data[:last_online]
     }
   end
 

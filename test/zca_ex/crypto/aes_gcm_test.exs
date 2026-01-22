@@ -11,7 +11,8 @@ defmodule ZcaEx.Crypto.AesGcmTest do
       aad = :crypto.strong_rand_bytes(16)
       plaintext = "Hello, WebSocket event data!"
 
-      {ciphertext, tag} = :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, plaintext, aad, true)
+      {ciphertext, tag} =
+        :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, plaintext, aad, true)
 
       encrypted_data = iv <> aad <> ciphertext <> tag
       cipher_key_base64 = Base.encode64(key)
@@ -25,7 +26,8 @@ defmodule ZcaEx.Crypto.AesGcmTest do
       aad = :crypto.strong_rand_bytes(16)
       plaintext = "Test message"
 
-      {ciphertext, tag} = :crypto.crypto_one_time_aead(:aes_128_gcm, key, iv, plaintext, aad, true)
+      {ciphertext, tag} =
+        :crypto.crypto_one_time_aead(:aes_128_gcm, key, iv, plaintext, aad, true)
 
       encrypted_data = iv <> aad <> ciphertext <> tag
       cipher_key_base64 = Base.encode64(key)
@@ -39,7 +41,8 @@ defmodule ZcaEx.Crypto.AesGcmTest do
       aad = :crypto.strong_rand_bytes(16)
       plaintext = ""
 
-      {ciphertext, tag} = :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, plaintext, aad, true)
+      {ciphertext, tag} =
+        :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, plaintext, aad, true)
 
       encrypted_data = iv <> aad <> ciphertext <> tag
       cipher_key_base64 = Base.encode64(key)
@@ -53,7 +56,8 @@ defmodule ZcaEx.Crypto.AesGcmTest do
       aad = :crypto.strong_rand_bytes(16)
       plaintext = ~s({"cmd":1,"data":{"userId":"12345","message":"hello"}})
 
-      {ciphertext, tag} = :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, plaintext, aad, true)
+      {ciphertext, tag} =
+        :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, plaintext, aad, true)
 
       encrypted_data = iv <> aad <> ciphertext <> tag
       cipher_key_base64 = Base.encode64(key)
@@ -91,7 +95,8 @@ defmodule ZcaEx.Crypto.AesGcmTest do
       aad = :crypto.strong_rand_bytes(16)
       plaintext = "Original message"
 
-      {ciphertext, tag} = :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, plaintext, aad, true)
+      {ciphertext, tag} =
+        :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, plaintext, aad, true)
 
       # Tamper with the ciphertext
       tampered_ciphertext = :crypto.strong_rand_bytes(byte_size(ciphertext))
@@ -107,7 +112,8 @@ defmodule ZcaEx.Crypto.AesGcmTest do
       aad = :crypto.strong_rand_bytes(16)
       plaintext = "Original message"
 
-      {ciphertext, _tag} = :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, plaintext, aad, true)
+      {ciphertext, _tag} =
+        :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, plaintext, aad, true)
 
       # Use a different tag
       tampered_tag = :crypto.strong_rand_bytes(16)
@@ -124,7 +130,8 @@ defmodule ZcaEx.Crypto.AesGcmTest do
       aad = :crypto.strong_rand_bytes(16)
       plaintext = "Secret message"
 
-      {ciphertext, tag} = :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, plaintext, aad, true)
+      {ciphertext, tag} =
+        :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, plaintext, aad, true)
 
       encrypted_data = iv <> aad <> ciphertext <> tag
       wrong_key_base64 = Base.encode64(wrong_key)

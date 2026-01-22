@@ -57,7 +57,9 @@ defmodule ZcaEx.Api.Endpoints.EditReminder do
   @spec validate_thread_type(term()) :: :ok | {:error, Error.t()}
   def validate_thread_type(:user), do: :ok
   def validate_thread_type(:group), do: :ok
-  def validate_thread_type(_), do: {:error, %Error{message: "thread_type must be :user or :group", code: nil}}
+
+  def validate_thread_type(_),
+    do: {:error, %Error{message: "thread_type must be :user or :group", code: nil}}
 
   @doc "Build URL for edit reminder endpoint"
   @spec build_url(Session.t(), thread_type()) :: String.t()
@@ -107,19 +109,20 @@ defmodule ZcaEx.Api.Endpoints.EditReminder do
       :group ->
         case Jason.encode(%{title: title}) do
           {:ok, params_json} ->
-            {:ok, %{
-              grid: thread_id,
-              type: 0,
-              color: -16_777_216,
-              emoji: emoji,
-              startTime: start_time,
-              duration: -1,
-              params: params_json,
-              topicId: reminder_id,
-              repeat: repeat,
-              imei: credentials.imei,
-              pinAct: 2
-            }}
+            {:ok,
+             %{
+               grid: thread_id,
+               type: 0,
+               color: -16_777_216,
+               emoji: emoji,
+               startTime: start_time,
+               duration: -1,
+               params: params_json,
+               topicId: reminder_id,
+               repeat: repeat,
+               imei: credentials.imei,
+               pinAct: 2
+             }}
 
           {:error, reason} ->
             {:error, %Error{message: "Failed to encode params: #{inspect(reason)}", code: nil}}

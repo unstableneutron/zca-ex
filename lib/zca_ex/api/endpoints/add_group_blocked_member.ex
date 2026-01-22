@@ -76,10 +76,14 @@ defmodule ZcaEx.Api.Endpoints.AddGroupBlockedMember do
 
   @spec validate_group_id(term()) :: :ok | {:error, Error.t()}
   defp validate_group_id(group_id) when is_binary(group_id) and byte_size(group_id) > 0, do: :ok
-  defp validate_group_id(_), do: {:error, %Error{message: "group_id cannot be empty", code: :invalid_input}}
+
+  defp validate_group_id(_),
+    do: {:error, %Error{message: "group_id cannot be empty", code: :invalid_input}}
 
   @spec validate_member_ids([String.t()]) :: :ok | {:error, Error.t()}
-  defp validate_member_ids([]), do: {:error, %Error{message: "member_id cannot be empty", code: :invalid_input}}
+  defp validate_member_ids([]),
+    do: {:error, %Error{message: "member_id cannot be empty", code: :invalid_input}}
+
   defp validate_member_ids(_), do: :ok
 
   defp get_service_url(session, service) do

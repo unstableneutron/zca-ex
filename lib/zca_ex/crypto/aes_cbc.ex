@@ -14,7 +14,8 @@ defmodule ZcaEx.Crypto.AesCbc do
   def encrypt_utf8_key(_key, "", _output_format, _uppercase?), do: nil
   def encrypt_utf8_key(_key, nil, _output_format, _uppercase?), do: nil
 
-  def encrypt_utf8_key(key, plaintext, output_format, uppercase?) when is_binary(key) and is_binary(plaintext) do
+  def encrypt_utf8_key(key, plaintext, output_format, uppercase?)
+      when is_binary(key) and is_binary(plaintext) do
     padded = pkcs7_pad(plaintext)
     cipher = cipher_for_key(key)
     ciphertext = :crypto.crypto_one_time(cipher, key, @zero_iv, padded, true)
@@ -65,7 +66,8 @@ defmodule ZcaEx.Crypto.AesCbc do
   def decrypt_utf8_key(_key, nil, _input_format), do: nil
   def decrypt_utf8_key(_key, "", _input_format), do: nil
 
-  def decrypt_utf8_key(key, ciphertext, input_format) when is_binary(key) and is_binary(ciphertext) do
+  def decrypt_utf8_key(key, ciphertext, input_format)
+      when is_binary(key) and is_binary(ciphertext) do
     # URL-decode first to match JS decodeRespAES behavior
     url_decoded = URI.decode(ciphertext)
 

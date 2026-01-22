@@ -143,7 +143,9 @@ defmodule ZcaEx.Account.Manager do
     params = Map.put(sign_params, :signkey, SignKey.generate("getserverinfo", sign_params))
 
     url =
-      HTTP.build_url("https://wpa.chat.zalo.me/api/login/getServerInfo", params, api_version: false)
+      HTTP.build_url("https://wpa.chat.zalo.me/api/login/getServerInfo", params,
+        api_version: false
+      )
 
     case AccountClient.get(account_id, url, creds.user_agent) do
       {:ok, %{status: 200, body: body}} ->
@@ -152,7 +154,8 @@ defmodule ZcaEx.Account.Manager do
         if resp["data"] do
           {:ok, resp["data"]}
         else
-          {:error, Error.api(resp["error_code"], resp["error_message"] || "Failed to get server info")}
+          {:error,
+           Error.api(resp["error_code"], resp["error_message"] || "Failed to get server info")}
         end
 
       result ->

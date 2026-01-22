@@ -35,38 +35,64 @@ defmodule ZcaEx.Api.Endpoints.SendBankCardTest do
 
   describe "build_params/6" do
     test "builds correct params for user thread", %{bin_bank: bin_bank} do
-      params = SendBankCard.build_params(bin_bank, "123456789", "NGUYEN VAN A", "thread123", :user, 1234567890)
+      params =
+        SendBankCard.build_params(
+          bin_bank,
+          "123456789",
+          "NGUYEN VAN A",
+          "thread123",
+          :user,
+          1_234_567_890
+        )
 
       assert params.binBank == bin_bank
       assert params.numAccBank == "123456789"
       assert params.nameAccBank == "NGUYEN VAN A"
       assert params.cliMsgId == "1234567890"
-      assert params.tsMsg == 1234567890
+      assert params.tsMsg == 1_234_567_890
       assert params.destUid == "thread123"
       assert params.destType == 0
     end
 
     test "builds correct params for group thread", %{bin_bank: bin_bank} do
-      params = SendBankCard.build_params(bin_bank, "123456789", "test", "group123", :group, 1234567890)
+      params =
+        SendBankCard.build_params(
+          bin_bank,
+          "123456789",
+          "test",
+          "group123",
+          :group,
+          1_234_567_890
+        )
 
       assert params.destType == 1
       assert params.destUid == "group123"
     end
 
     test "uppercases name_acc_bank", %{bin_bank: bin_bank} do
-      params = SendBankCard.build_params(bin_bank, "123456789", "nguyen van a", "thread123", :user, 1234567890)
+      params =
+        SendBankCard.build_params(
+          bin_bank,
+          "123456789",
+          "nguyen van a",
+          "thread123",
+          :user,
+          1_234_567_890
+        )
 
       assert params.nameAccBank == "NGUYEN VAN A"
     end
 
     test "uses --- for empty name_acc_bank", %{bin_bank: bin_bank} do
-      params = SendBankCard.build_params(bin_bank, "123456789", "", "thread123", :user, 1234567890)
+      params =
+        SendBankCard.build_params(bin_bank, "123456789", "", "thread123", :user, 1_234_567_890)
 
       assert params.nameAccBank == "---"
     end
 
     test "uses --- for nil name_acc_bank", %{bin_bank: bin_bank} do
-      params = SendBankCard.build_params(bin_bank, "123456789", nil, "thread123", :user, 1234567890)
+      params =
+        SendBankCard.build_params(bin_bank, "123456789", nil, "thread123", :user, 1_234_567_890)
 
       assert params.nameAccBank == "---"
     end
@@ -83,7 +109,11 @@ defmodule ZcaEx.Api.Endpoints.SendBankCardTest do
   end
 
   describe "send/7 validation" do
-    test "returns error for nil thread_id", %{session: session, credentials: credentials, bin_bank: bin_bank} do
+    test "returns error for nil thread_id", %{
+      session: session,
+      credentials: credentials,
+      bin_bank: bin_bank
+    } do
       result = SendBankCard.send(session, credentials, nil, :user, bin_bank, "123456789")
 
       assert {:error, error} = result
@@ -91,7 +121,11 @@ defmodule ZcaEx.Api.Endpoints.SendBankCardTest do
       assert error.code == :invalid_input
     end
 
-    test "returns error for empty thread_id", %{session: session, credentials: credentials, bin_bank: bin_bank} do
+    test "returns error for empty thread_id", %{
+      session: session,
+      credentials: credentials,
+      bin_bank: bin_bank
+    } do
       result = SendBankCard.send(session, credentials, "", :user, bin_bank, "123456789")
 
       assert {:error, error} = result
@@ -99,8 +133,13 @@ defmodule ZcaEx.Api.Endpoints.SendBankCardTest do
       assert error.code == :invalid_input
     end
 
-    test "returns error for invalid thread_type", %{session: session, credentials: credentials, bin_bank: bin_bank} do
-      result = SendBankCard.send(session, credentials, "thread123", :invalid, bin_bank, "123456789")
+    test "returns error for invalid thread_type", %{
+      session: session,
+      credentials: credentials,
+      bin_bank: bin_bank
+    } do
+      result =
+        SendBankCard.send(session, credentials, "thread123", :invalid, bin_bank, "123456789")
 
       assert {:error, error} = result
       assert error.message == "thread_type must be :user or :group"
@@ -124,14 +163,19 @@ defmodule ZcaEx.Api.Endpoints.SendBankCardTest do
     end
 
     test "returns error for non-map bin_bank", %{session: session, credentials: credentials} do
-      result = SendBankCard.send(session, credentials, "thread123", :user, "not a map", "123456789")
+      result =
+        SendBankCard.send(session, credentials, "thread123", :user, "not a map", "123456789")
 
       assert {:error, error} = result
       assert error.message == "bin_bank must be a map"
       assert error.code == :invalid_input
     end
 
-    test "returns error for nil num_acc_bank", %{session: session, credentials: credentials, bin_bank: bin_bank} do
+    test "returns error for nil num_acc_bank", %{
+      session: session,
+      credentials: credentials,
+      bin_bank: bin_bank
+    } do
       result = SendBankCard.send(session, credentials, "thread123", :user, bin_bank, nil)
 
       assert {:error, error} = result
@@ -139,7 +183,11 @@ defmodule ZcaEx.Api.Endpoints.SendBankCardTest do
       assert error.code == :invalid_input
     end
 
-    test "returns error for empty num_acc_bank", %{session: session, credentials: credentials, bin_bank: bin_bank} do
+    test "returns error for empty num_acc_bank", %{
+      session: session,
+      credentials: credentials,
+      bin_bank: bin_bank
+    } do
       result = SendBankCard.send(session, credentials, "thread123", :user, bin_bank, "")
 
       assert {:error, error} = result
@@ -147,34 +195,82 @@ defmodule ZcaEx.Api.Endpoints.SendBankCardTest do
       assert error.code == :invalid_input
     end
 
-    test "returns error for missing service URL", %{session: session, credentials: credentials, bin_bank: bin_bank} do
+    test "returns error for missing service URL", %{
+      session: session,
+      credentials: credentials,
+      bin_bank: bin_bank
+    } do
       session_no_service = %{session | zpw_service_map: %{}}
-      result = SendBankCard.send(session_no_service, credentials, "thread123", :user, bin_bank, "123456789")
+
+      result =
+        SendBankCard.send(
+          session_no_service,
+          credentials,
+          "thread123",
+          :user,
+          bin_bank,
+          "123456789"
+        )
 
       assert {:error, error} = result
       assert error.message =~ "zimsg service URL not found"
       assert error.code == :service_not_found
     end
 
-    test "returns error for non-string name_acc_bank in opts", %{session: session, credentials: credentials, bin_bank: bin_bank} do
-      result = SendBankCard.send(session, credentials, "thread123", :user, bin_bank, "123456789", name_acc_bank: 12345)
+    test "returns error for non-string name_acc_bank in opts", %{
+      session: session,
+      credentials: credentials,
+      bin_bank: bin_bank
+    } do
+      result =
+        SendBankCard.send(session, credentials, "thread123", :user, bin_bank, "123456789",
+          name_acc_bank: 12345
+        )
 
       assert {:error, error} = result
       assert error.message == "name_acc_bank must be nil or a string"
       assert error.code == :invalid_input
     end
 
-    test "accepts nil name_acc_bank in opts", %{session: session, credentials: credentials, bin_bank: bin_bank} do
+    test "accepts nil name_acc_bank in opts", %{
+      session: session,
+      credentials: credentials,
+      bin_bank: bin_bank
+    } do
       session_no_service = %{session | zpw_service_map: %{}}
-      result = SendBankCard.send(session_no_service, credentials, "thread123", :user, bin_bank, "123456789", name_acc_bank: nil)
+
+      result =
+        SendBankCard.send(
+          session_no_service,
+          credentials,
+          "thread123",
+          :user,
+          bin_bank,
+          "123456789",
+          name_acc_bank: nil
+        )
 
       assert {:error, error} = result
       assert error.code == :service_not_found
     end
 
-    test "accepts string name_acc_bank in opts", %{session: session, credentials: credentials, bin_bank: bin_bank} do
+    test "accepts string name_acc_bank in opts", %{
+      session: session,
+      credentials: credentials,
+      bin_bank: bin_bank
+    } do
       session_no_service = %{session | zpw_service_map: %{}}
-      result = SendBankCard.send(session_no_service, credentials, "thread123", :user, bin_bank, "123456789", name_acc_bank: "Test Name")
+
+      result =
+        SendBankCard.send(
+          session_no_service,
+          credentials,
+          "thread123",
+          :user,
+          bin_bank,
+          "123456789",
+          name_acc_bank: "Test Name"
+        )
 
       assert {:error, error} = result
       assert error.code == :service_not_found

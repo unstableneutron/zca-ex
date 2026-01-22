@@ -62,9 +62,9 @@ defmodule ZcaEx.Crypto.ParamsEncryptor do
     {even_md5, _odd_md5} = process_str(zcid_ext_md5)
     {even_zcid, odd_zcid} = process_str(zcid)
 
-    Enum.take(even_md5, 8) ++
-      Enum.take(even_zcid, 12) ++
-      (odd_zcid |> Enum.reverse() |> Enum.take(12))
+    (Enum.take(even_md5, 8) ++
+       Enum.take(even_zcid, 12) ++
+       (odd_zcid |> Enum.reverse() |> Enum.take(12)))
     |> Enum.join("")
   end
 

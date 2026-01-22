@@ -117,7 +117,10 @@ defmodule ZcaEx.Api.Endpoints.DeleteGroupInviteBoxTest do
   end
 
   describe "call/4 validation" do
-    test "returns error when group_ids is empty list", %{session: session, credentials: credentials} do
+    test "returns error when group_ids is empty list", %{
+      session: session,
+      credentials: credentials
+    } do
       assert {:error, %ZcaEx.Error{message: "Group IDs cannot be empty", code: :invalid_input}} =
                DeleteGroupInviteBox.call([], [], session, credentials)
     end

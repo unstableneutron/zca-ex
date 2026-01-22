@@ -1,7 +1,7 @@
 defmodule ZcaEx.WS.DecryptTest do
   @moduledoc """
   Tests for WebSocket event decryption and gzip decompression.
-  
+
   Data captured from live WebSocket session:
   - Cipher key from handshake
   - Encrypted message payloads with encrypt=2
@@ -23,10 +23,10 @@ defmodule ZcaEx.WS.DecryptTest do
       # Create gzip compressed test data
       original = ~s({"event":"test","data":"hello world"})
       compressed = :zlib.gzip(original)
-      
+
       # Verify magic bytes
       <<0x1F, 0x8B, _rest::binary>> = compressed
-      
+
       # Test decompression
       result = maybe_decompress(compressed, 2)
       assert {:ok, ^original} = result
@@ -35,14 +35,14 @@ defmodule ZcaEx.WS.DecryptTest do
     test "decompresses gzip data with encrypt type 1" do
       original = "test payload data"
       compressed = :zlib.gzip(original)
-      
+
       result = maybe_decompress(compressed, 1)
       assert {:ok, ^original} = result
     end
 
     test "passes through data unchanged for other encrypt types" do
       data = "uncompressed data"
-      
+
       assert {:ok, ^data} = maybe_decompress(data, 0)
       assert {:ok, ^data} = maybe_decompress(data, 3)
       assert {:ok, ^data} = maybe_decompress(data, nil)
@@ -50,7 +50,7 @@ defmodule ZcaEx.WS.DecryptTest do
 
     test "handles invalid gzip data gracefully" do
       invalid_data = "not gzip data at all"
-      
+
       result = maybe_decompress(invalid_data, 2)
       assert {:error, {:decompress_failed, _}} = result
     end
@@ -119,10 +119,11 @@ defmodule ZcaEx.WS.DecryptTest do
       url_decoded = URI.decode(@encrypted_data_1)
       {:ok, encrypted_binary} = Base.decode64(url_decoded)
       {:ok, decrypted} = AesGcm.decrypt(@cipher_key, encrypted_binary)
-      
+
       # Gzip header: 1F 8B 08 [flags] [mtime 4 bytes] [xfl] [os]
-      assert <<0x1F, 0x8B, 0x08, flags, _mtime::binary-size(4), _xfl, _os, _rest::binary>> = decrypted
-      
+      assert <<0x1F, 0x8B, 0x08, flags, _mtime::binary-size(4), _xfl, _os, _rest::binary>> =
+               decrypted
+
       # flags=0 means no extra fields (FTEXT, FHCRC, FEXTRA, FNAME, FCOMMENT all clear)
       assert flags == 0
     end
@@ -131,20 +132,20 @@ defmodule ZcaEx.WS.DecryptTest do
       url_decoded = URI.decode(@encrypted_data_1)
       {:ok, encrypted_binary} = Base.decode64(url_decoded)
       {:ok, decrypted} = AesGcm.decrypt(@cipher_key, encrypted_binary)
-      
+
       # Method 1: zlib.gunzip
       gunzip_result = :zlib.gunzip(decrypted)
       assert is_binary(gunzip_result)
-      
+
       # Method 2: inflate with window bits 31 (15 + 16 for gzip)
       z = :zlib.open()
       :ok = :zlib.inflateInit(z, 31)
       inflate_result = :zlib.inflate(z, decrypted) |> IO.iodata_to_binary()
       :zlib.inflateEnd(z)
       :zlib.close(z)
-      
+
       assert is_binary(inflate_result)
-      
+
       # Both should produce the same result
       assert gunzip_result == inflate_result
     end

@@ -51,7 +51,9 @@ defmodule ZcaEx.Api.Endpoints.ChangeFriendAlias do
   def validate_friend_id(nil), do: {:error, %Error{message: "friend_id is required", code: nil}}
   def validate_friend_id(""), do: {:error, %Error{message: "friend_id is required", code: nil}}
   def validate_friend_id(id) when is_binary(id), do: :ok
-  def validate_friend_id(_), do: {:error, %Error{message: "friend_id must be a string", code: nil}}
+
+  def validate_friend_id(_),
+    do: {:error, %Error{message: "friend_id must be a string", code: nil}}
 
   @doc "Validate alias is present"
   @spec validate_alias(String.t() | nil) :: :ok | {:error, Error.t()}

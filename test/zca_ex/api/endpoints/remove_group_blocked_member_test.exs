@@ -35,7 +35,10 @@ defmodule ZcaEx.Api.Endpoints.RemoveGroupBlockedMemberTest do
     end
 
     test "keeps list as is" do
-      assert RemoveGroupBlockedMember.normalize_member_ids(["user1", "user2"]) == ["user1", "user2"]
+      assert RemoveGroupBlockedMember.normalize_member_ids(["user1", "user2"]) == [
+               "user1",
+               "user2"
+             ]
     end
   end
 
@@ -83,7 +86,10 @@ defmodule ZcaEx.Api.Endpoints.RemoveGroupBlockedMemberTest do
                RemoveGroupBlockedMember.call(nil, "user123", session, credentials)
     end
 
-    test "returns error when member_ids is empty list", %{session: session, credentials: credentials} do
+    test "returns error when member_ids is empty list", %{
+      session: session,
+      credentials: credentials
+    } do
       assert {:error, %ZcaEx.Error{message: "member_id cannot be empty", code: :invalid_input}} =
                RemoveGroupBlockedMember.call("group123", [], session, credentials)
     end

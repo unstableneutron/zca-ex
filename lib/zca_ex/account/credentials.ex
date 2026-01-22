@@ -61,7 +61,9 @@ defmodule ZcaEx.Account.Credentials do
 
   defp fetch_cookies(opts) do
     case Keyword.fetch(opts, :cookies) do
-      {:ok, value} when not is_nil(value) -> {:ok, value}
+      {:ok, value} when not is_nil(value) ->
+        {:ok, value}
+
       _ ->
         case Keyword.fetch(opts, :cookie) do
           {:ok, value} when not is_nil(value) -> {:ok, value}
@@ -97,6 +99,7 @@ defmodule ZcaEx.Account.Credentials do
 
   defp normalize_cookies_to_list(cookies) when is_list(cookies), do: cookies
   defp normalize_cookies_to_list(%{"cookies" => cookies}) when is_list(cookies), do: cookies
+
   defp normalize_cookies_to_list(cookie_string) when is_binary(cookie_string) do
     cookie_string
     |> String.split(";")
@@ -109,6 +112,7 @@ defmodule ZcaEx.Account.Credentials do
       end
     end)
   end
+
   defp normalize_cookies_to_list(cookies) when is_map(cookies), do: [cookies]
 
   @spec from_map(map()) :: {:ok, t()} | {:error, term()}

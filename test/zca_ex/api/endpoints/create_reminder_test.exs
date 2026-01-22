@@ -63,7 +63,8 @@ defmodule ZcaEx.Api.Endpoints.CreateReminderTest do
 
   describe "build_params/5 for user thread type" do
     test "builds correct params with defaults", %{session: session, credentials: credentials} do
-      {:ok, params} = CreateReminder.build_params("user123", "Test Reminder", session, credentials, [])
+      {:ok, params} =
+        CreateReminder.build_params("user123", "Test Reminder", session, credentials, [])
 
       assert Map.has_key?(params, :objectData)
       assert params.imei == "test-imei-12345"

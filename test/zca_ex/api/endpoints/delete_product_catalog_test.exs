@@ -70,11 +70,17 @@ defmodule ZcaEx.Api.Endpoints.DeleteProductCatalogTest do
       assert error.message == "catalog_id must be a non-empty string"
     end
 
-    test "returns error for empty product_id string", %{session: session, credentials: credentials} do
+    test "returns error for empty product_id string", %{
+      session: session,
+      credentials: credentials
+    } do
       result = DeleteProductCatalog.delete("cat1", "", session, credentials)
 
       assert {:error, error} = result
-      assert error.message == "product_ids must be a non-empty string or non-empty list of strings"
+
+      assert error.message ==
+               "product_ids must be a non-empty string or non-empty list of strings"
+
       assert error.code == :invalid_input
     end
 
@@ -82,10 +88,15 @@ defmodule ZcaEx.Api.Endpoints.DeleteProductCatalogTest do
       result = DeleteProductCatalog.delete("cat1", nil, session, credentials)
 
       assert {:error, error} = result
-      assert error.message == "product_ids must be a non-empty string or non-empty list of strings"
+
+      assert error.message ==
+               "product_ids must be a non-empty string or non-empty list of strings"
     end
 
-    test "normalizes single string product_id to list", %{session: session, credentials: credentials} do
+    test "normalizes single string product_id to list", %{
+      session: session,
+      credentials: credentials
+    } do
       session_no_service = %{session | zpw_service_map: %{}}
       result = DeleteProductCatalog.delete("cat1", "prod1", session_no_service, credentials)
 
@@ -120,7 +131,9 @@ defmodule ZcaEx.Api.Endpoints.DeleteProductCatalogTest do
 
     test "accepts valid list of product_ids", %{session: session, credentials: credentials} do
       session_no_service = %{session | zpw_service_map: %{}}
-      result = DeleteProductCatalog.delete("cat1", ["prod1", "prod2"], session_no_service, credentials)
+
+      result =
+        DeleteProductCatalog.delete("cat1", ["prod1", "prod2"], session_no_service, credentials)
 
       assert {:error, error} = result
       assert error.code == :service_not_found

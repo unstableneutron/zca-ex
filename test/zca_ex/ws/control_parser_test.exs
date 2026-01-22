@@ -48,7 +48,10 @@ defmodule ZcaEx.WS.ControlParserTest do
         }
       }
 
-      assert [{:upload_attachment, %{file_id: "abc-456", file_url: "https://example.com/doc.pdf"}}] =
+      assert [
+               {:upload_attachment,
+                %{file_id: "abc-456", file_url: "https://example.com/doc.pdf"}}
+             ] =
                ControlParser.parse(payload)
     end
 
@@ -142,7 +145,10 @@ defmodule ZcaEx.WS.ControlParserTest do
         }
       }
 
-      assert [{:friend_event, %{act: "req_v2", data: %{"userId" => "u789", "message" => "Hello"}}}] =
+      assert [
+               {:friend_event,
+                %{act: "req_v2", data: %{"userId" => "u789", "message" => "Hello"}}}
+             ] =
                ControlParser.parse(payload)
     end
 

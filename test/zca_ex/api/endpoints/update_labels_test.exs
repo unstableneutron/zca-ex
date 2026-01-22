@@ -206,7 +206,10 @@ defmodule ZcaEx.Api.Endpoints.UpdateLabelsTest do
   end
 
   describe "update/4 validation" do
-    test "returns error when label_data is not a list", %{session: session, credentials: credentials} do
+    test "returns error when label_data is not a list", %{
+      session: session,
+      credentials: credentials
+    } do
       assert {:error, %ZcaEx.Error{message: "label_data must be a list"}} =
                UpdateLabels.update("not a list", 1, session, credentials)
     end
@@ -216,7 +219,10 @@ defmodule ZcaEx.Api.Endpoints.UpdateLabelsTest do
                UpdateLabels.update([], -1, session, credentials)
     end
 
-    test "returns error when version is not an integer", %{session: session, credentials: credentials} do
+    test "returns error when version is not an integer", %{
+      session: session,
+      credentials: credentials
+    } do
       assert {:error, %ZcaEx.Error{message: "version must be a non-negative integer"}} =
                UpdateLabels.update([], "5", session, credentials)
     end

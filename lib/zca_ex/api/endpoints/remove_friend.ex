@@ -53,7 +53,9 @@ defmodule ZcaEx.Api.Endpoints.RemoveFriend do
   def validate_user_id(user_id) when is_binary(user_id) and byte_size(user_id) > 0, do: :ok
   def validate_user_id(""), do: {:error, %Error{message: "user_id is required", code: nil}}
   def validate_user_id(nil), do: {:error, %Error{message: "user_id is required", code: nil}}
-  def validate_user_id(_), do: {:error, %Error{message: "user_id must be a non-empty string", code: nil}}
+
+  def validate_user_id(_),
+    do: {:error, %Error{message: "user_id must be a non-empty string", code: nil}}
 
   @doc "Build URL for remove friend endpoint with encrypted params"
   @spec build_url(Session.t(), String.t()) :: String.t()

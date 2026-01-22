@@ -124,7 +124,11 @@ defmodule ZcaEx.Api.Endpoints.GetFriendBoardListTest do
 
       result = GetFriendBoardList.transform_response(data)
 
-      assert result.data == [%{"id" => "1", "name" => "Item 1"}, %{"id" => "2", "name" => "Item 2"}]
+      assert result.data == [
+               %{"id" => "1", "name" => "Item 1"},
+               %{"id" => "2", "name" => "Item 2"}
+             ]
+
       assert result.version == 5
     end
 

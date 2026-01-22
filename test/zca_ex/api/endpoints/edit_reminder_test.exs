@@ -63,7 +63,8 @@ defmodule ZcaEx.Api.Endpoints.EditReminderTest do
 
   describe "build_params/5 for user thread type" do
     test "builds correct params with defaults", %{credentials: credentials} do
-      {:ok, params} = EditReminder.build_params("user123", "reminder456", "Updated Title", credentials, [])
+      {:ok, params} =
+        EditReminder.build_params("user123", "reminder456", "Updated Title", credentials, [])
 
       assert Map.has_key?(params, :objectData)
 
@@ -140,7 +141,9 @@ defmodule ZcaEx.Api.Endpoints.EditReminderTest do
   describe "call/6 validation" do
     test "returns error for invalid thread_type", %{session: session, credentials: credentials} do
       assert {:error, %ZcaEx.Error{message: "thread_type must be :user or :group"}} =
-               EditReminder.call("user123", "reminder456", "Test", session, credentials, thread_type: :invalid)
+               EditReminder.call("user123", "reminder456", "Test", session, credentials,
+                 thread_type: :invalid
+               )
     end
   end
 end

@@ -53,7 +53,13 @@ defmodule ZcaEx.Api.Endpoints.CreateNoteTest do
     end
 
     test "encodes title with special characters", %{credentials: credentials} do
-      assert {:ok, params} = CreateNote.build_params("group123", "Note with \"quotes\" & symbols", false, credentials)
+      assert {:ok, params} =
+               CreateNote.build_params(
+                 "group123",
+                 "Note with \"quotes\" & symbols",
+                 false,
+                 credentials
+               )
 
       assert params.params == ~s({"title":"Note with \\"quotes\\" & symbols"})
     end

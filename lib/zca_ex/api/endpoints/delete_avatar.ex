@@ -54,7 +54,9 @@ defmodule ZcaEx.Api.Endpoints.DeleteAvatar do
 
   @doc "Validate that photo IDs list is non-empty"
   @spec validate_photo_ids([String.t()]) :: :ok | {:error, Error.t()}
-  def validate_photo_ids([]), do: {:error, %Error{message: "At least one photo ID is required", code: nil}}
+  def validate_photo_ids([]),
+    do: {:error, %Error{message: "At least one photo ID is required", code: nil}}
+
   def validate_photo_ids(ids) when is_list(ids), do: :ok
   def validate_photo_ids(_), do: {:error, %Error{message: "Photo IDs must be a list", code: nil}}
 

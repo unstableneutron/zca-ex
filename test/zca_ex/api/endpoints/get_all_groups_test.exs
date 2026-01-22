@@ -54,7 +54,10 @@ defmodule ZcaEx.Api.Endpoints.GetAllGroupsTest do
     end
 
     test "raises when group_poll service missing", %{session: session, credentials: credentials} do
-      session_wrong_service = %{session | zpw_service_map: %{"group" => ["https://group.zalo.me"]}}
+      session_wrong_service = %{
+        session
+        | zpw_service_map: %{"group" => ["https://group.zalo.me"]}
+      }
 
       assert_raise RuntimeError, ~r/Service URL not found for group_poll/, fn ->
         GetAllGroups.call(session_wrong_service, credentials)

@@ -56,7 +56,10 @@ defmodule ZcaEx.Api.Endpoints.RemoveQuickMessageTest do
   end
 
   describe "remove/3 validation" do
-    test "accepts single positive integer returns error for missing service", %{session: session, credentials: credentials} do
+    test "accepts single positive integer returns error for missing service", %{
+      session: session,
+      credentials: credentials
+    } do
       session_no_service = %{session | zpw_service_map: %{}}
       result = RemoveQuickMessage.remove(123, session_no_service, credentials)
 
@@ -65,7 +68,10 @@ defmodule ZcaEx.Api.Endpoints.RemoveQuickMessageTest do
       assert error.code == :service_not_found
     end
 
-    test "accepts list of positive integers returns error for missing service", %{session: session, credentials: credentials} do
+    test "accepts list of positive integers returns error for missing service", %{
+      session: session,
+      credentials: credentials
+    } do
       session_no_service = %{session | zpw_service_map: %{}}
       result = RemoveQuickMessage.remove([1, 2, 3], session_no_service, credentials)
 
@@ -96,7 +102,10 @@ defmodule ZcaEx.Api.Endpoints.RemoveQuickMessageTest do
       assert error.code == :invalid_input
     end
 
-    test "returns error for list with invalid items", %{session: session, credentials: credentials} do
+    test "returns error for list with invalid items", %{
+      session: session,
+      credentials: credentials
+    } do
       result = RemoveQuickMessage.remove([1, 0, 3], session, credentials)
 
       assert {:error, error} = result
@@ -110,7 +119,10 @@ defmodule ZcaEx.Api.Endpoints.RemoveQuickMessageTest do
       assert error.code == :invalid_input
     end
 
-    test "returns error for missing service URL with valid input", %{session: session, credentials: credentials} do
+    test "returns error for missing service URL with valid input", %{
+      session: session,
+      credentials: credentials
+    } do
       session_no_service = %{session | zpw_service_map: %{}}
       result = RemoveQuickMessage.remove(123, session_no_service, credentials)
 

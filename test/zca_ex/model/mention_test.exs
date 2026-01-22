@@ -44,7 +44,7 @@ defmodule ZcaEx.Model.MentionTest do
     end
 
     test "converts numeric uid to string" do
-      map = %{"uid" => 123456, "pos" => 5, "len" => 10, "type" => 1}
+      map = %{"uid" => 123_456, "pos" => 5, "len" => 10, "type" => 1}
       mention = Mention.from_map(map)
 
       assert mention.uid == "123456"

@@ -141,7 +141,11 @@ defmodule ZcaEx.Api.Endpoints.ForwardMessage do
           fwLvl: ref[:fw_lvl]
         }
 
-        Map.put(msg_info, :reference, Jason.encode!(%{type: 3, data: Jason.encode!(reference_data)}))
+        Map.put(
+          msg_info,
+          :reference,
+          Jason.encode!(%{type: 3, data: Jason.encode!(reference_data)})
+        )
     end
   end
 

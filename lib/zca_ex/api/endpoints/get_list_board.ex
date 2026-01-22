@@ -120,12 +120,14 @@ defmodule ZcaEx.Api.Endpoints.GetListBoard do
 
   defp transform_item(_item), do: %{board_type: nil, data: %{}}
 
-  defp transform_item_data(board_type, data) when is_map(data) and board_type != @poll_board_type do
-    params_key = cond do
-      Map.has_key?(data, "params") -> "params"
-      Map.has_key?(data, :params) -> :params
-      true -> nil
-    end
+  defp transform_item_data(board_type, data)
+       when is_map(data) and board_type != @poll_board_type do
+    params_key =
+      cond do
+        Map.has_key?(data, "params") -> "params"
+        Map.has_key?(data, :params) -> :params
+        true -> nil
+      end
 
     case params_key do
       nil ->
@@ -170,9 +172,14 @@ defmodule ZcaEx.Api.Endpoints.GetListBoard do
 
   defp get_service_url(session) do
     case get_in(session.zpw_service_map, ["group_board"]) do
-      [url | _] when is_binary(url) -> {:ok, url}
-      url when is_binary(url) -> {:ok, url}
-      _ -> {:error, Error.new(:api, "group_board service URL not found", code: :service_not_found)}
+      [url | _] when is_binary(url) ->
+        {:ok, url}
+
+      url when is_binary(url) ->
+        {:ok, url}
+
+      _ ->
+        {:error, Error.new(:api, "group_board service URL not found", code: :service_not_found)}
     end
   end
 end

@@ -90,7 +90,9 @@ defmodule ZcaEx.Api.Endpoints.SetPinnedConversations do
   def normalize_thread_ids(thread_ids) when is_list(thread_ids), do: thread_ids
 
   @spec validate_thread_ids([String.t()]) :: :ok | {:error, Error.t()}
-  defp validate_thread_ids([]), do: {:error, %Error{message: "thread_ids cannot be empty", code: nil}}
+  defp validate_thread_ids([]),
+    do: {:error, %Error{message: "thread_ids cannot be empty", code: nil}}
+
   defp validate_thread_ids(_), do: :ok
 
   defp get_service_url(session, service) do

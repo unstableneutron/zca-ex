@@ -83,7 +83,10 @@ defmodule ZcaEx.Api.Endpoints.AddGroupBlockedMemberTest do
                AddGroupBlockedMember.call(nil, "user123", session, credentials)
     end
 
-    test "returns error when member_ids is empty list", %{session: session, credentials: credentials} do
+    test "returns error when member_ids is empty list", %{
+      session: session,
+      credentials: credentials
+    } do
       assert {:error, %ZcaEx.Error{message: "member_id cannot be empty", code: :invalid_input}} =
                AddGroupBlockedMember.call("group123", [], session, credentials)
     end

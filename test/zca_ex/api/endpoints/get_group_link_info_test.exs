@@ -104,7 +104,9 @@ defmodule ZcaEx.Api.Endpoints.GetGroupLinkInfoTest do
       session_no_service = %{session | zpw_service_map: %{}}
 
       assert_raise RuntimeError, ~r/Service URL not found/, fn ->
-        GetGroupLinkInfo.call("https://zalo.me/g/abcdef", session_no_service, credentials, member_page: 2)
+        GetGroupLinkInfo.call("https://zalo.me/g/abcdef", session_no_service, credentials,
+          member_page: 2
+        )
       end
     end
   end

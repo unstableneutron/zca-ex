@@ -61,7 +61,10 @@ defmodule ZcaEx.Api.Endpoints.RemoveQuickMessage do
   end
 
   defp validate_item_ids(_) do
-    {:error, Error.new(:api, "item_ids must be a positive integer or list of positive integers", code: :invalid_input)}
+    {:error,
+     Error.new(:api, "item_ids must be a positive integer or list of positive integers",
+       code: :invalid_input
+     )}
   end
 
   @doc false
@@ -80,9 +83,14 @@ defmodule ZcaEx.Api.Endpoints.RemoveQuickMessage do
 
   defp get_service_url(session) do
     case get_in(session.zpw_service_map, ["quick_message"]) do
-      [url | _] when is_binary(url) -> {:ok, url}
-      url when is_binary(url) -> {:ok, url}
-      _ -> {:error, Error.new(:api, "quick_message service URL not found", code: :service_not_found)}
+      [url | _] when is_binary(url) ->
+        {:ok, url}
+
+      url when is_binary(url) ->
+        {:ok, url}
+
+      _ ->
+        {:error, Error.new(:api, "quick_message service URL not found", code: :service_not_found)}
     end
   end
 

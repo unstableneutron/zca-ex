@@ -99,7 +99,10 @@ defmodule ZcaEx.Api.Endpoints.GetArchivedChatListTest do
     end
 
     test "raises when label service missing", %{session: session, credentials: credentials} do
-      session_wrong_service = %{session | zpw_service_map: %{"other" => ["https://other.zalo.me"]}}
+      session_wrong_service = %{
+        session
+        | zpw_service_map: %{"other" => ["https://other.zalo.me"]}
+      }
 
       assert_raise RuntimeError, ~r/Service URL not found for label/, fn ->
         GetArchivedChatList.call(session_wrong_service, credentials)

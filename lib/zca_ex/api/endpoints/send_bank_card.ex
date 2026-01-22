@@ -32,7 +32,15 @@ defmodule ZcaEx.Api.Endpoints.SendBankCard do
     - `{:ok, :success}` on success
     - `{:error, Error.t()}` on failure
   """
-  @spec send(Session.t(), Credentials.t(), String.t(), thread_type(), bin_bank(), String.t(), keyword()) ::
+  @spec send(
+          Session.t(),
+          Credentials.t(),
+          String.t(),
+          thread_type(),
+          bin_bank(),
+          String.t(),
+          keyword()
+        ) ::
           {:ok, :success} | {:error, Error.t()}
   def send(session, credentials, thread_id, thread_type, bin_bank, num_acc_bank, opts \\ []) do
     name_acc_bank = Keyword.get(opts, :name_acc_bank, "---")
@@ -69,32 +77,57 @@ defmodule ZcaEx.Api.Endpoints.SendBankCard do
     end
   end
 
-  defp validate_thread_id(thread_id) when is_binary(thread_id) and byte_size(thread_id) > 0, do: :ok
-  defp validate_thread_id(nil), do: {:error, Error.new(:api, "thread_id is required", code: :invalid_input)}
-  defp validate_thread_id(<<>>), do: {:error, Error.new(:api, "thread_id cannot be empty", code: :invalid_input)}
-  defp validate_thread_id(_), do: {:error, Error.new(:api, "thread_id must be a string", code: :invalid_input)}
+  defp validate_thread_id(thread_id) when is_binary(thread_id) and byte_size(thread_id) > 0,
+    do: :ok
+
+  defp validate_thread_id(nil),
+    do: {:error, Error.new(:api, "thread_id is required", code: :invalid_input)}
+
+  defp validate_thread_id(<<>>),
+    do: {:error, Error.new(:api, "thread_id cannot be empty", code: :invalid_input)}
+
+  defp validate_thread_id(_),
+    do: {:error, Error.new(:api, "thread_id must be a string", code: :invalid_input)}
 
   defp validate_thread_type(type) when type in [:user, :group], do: :ok
-  defp validate_thread_type(_), do: {:error, Error.new(:api, "thread_type must be :user or :group", code: :invalid_input)}
+
+  defp validate_thread_type(_),
+    do: {:error, Error.new(:api, "thread_type must be :user or :group", code: :invalid_input)}
 
   defp validate_bin_bank(bin_bank) when is_map(bin_bank) and map_size(bin_bank) > 0, do: :ok
-  defp validate_bin_bank(nil), do: {:error, Error.new(:api, "bin_bank is required", code: :invalid_input)}
-  defp validate_bin_bank(bin_bank) when is_map(bin_bank), do: {:error, Error.new(:api, "bin_bank cannot be empty", code: :invalid_input)}
-  defp validate_bin_bank(_), do: {:error, Error.new(:api, "bin_bank must be a map", code: :invalid_input)}
+
+  defp validate_bin_bank(nil),
+    do: {:error, Error.new(:api, "bin_bank is required", code: :invalid_input)}
+
+  defp validate_bin_bank(bin_bank) when is_map(bin_bank),
+    do: {:error, Error.new(:api, "bin_bank cannot be empty", code: :invalid_input)}
+
+  defp validate_bin_bank(_),
+    do: {:error, Error.new(:api, "bin_bank must be a map", code: :invalid_input)}
 
   defp validate_num_acc_bank(num) when is_binary(num) and byte_size(num) > 0, do: :ok
-  defp validate_num_acc_bank(nil), do: {:error, Error.new(:api, "num_acc_bank is required", code: :invalid_input)}
-  defp validate_num_acc_bank(<<>>), do: {:error, Error.new(:api, "num_acc_bank cannot be empty", code: :invalid_input)}
-  defp validate_num_acc_bank(_), do: {:error, Error.new(:api, "num_acc_bank must be a string", code: :invalid_input)}
+
+  defp validate_num_acc_bank(nil),
+    do: {:error, Error.new(:api, "num_acc_bank is required", code: :invalid_input)}
+
+  defp validate_num_acc_bank(<<>>),
+    do: {:error, Error.new(:api, "num_acc_bank cannot be empty", code: :invalid_input)}
+
+  defp validate_num_acc_bank(_),
+    do: {:error, Error.new(:api, "num_acc_bank must be a string", code: :invalid_input)}
 
   defp validate_name_acc_bank(nil), do: :ok
   defp validate_name_acc_bank(name) when is_binary(name), do: :ok
-  defp validate_name_acc_bank(_), do: {:error, Error.new(:api, "name_acc_bank must be nil or a string", code: :invalid_input)}
+
+  defp validate_name_acc_bank(_),
+    do: {:error, Error.new(:api, "name_acc_bank must be nil or a string", code: :invalid_input)}
 
   @doc false
   def build_params(bin_bank, num_acc_bank, name_acc_bank, thread_id, thread_type, now) do
     dest_type = if thread_type == :group, do: 1, else: 0
-    formatted_name = if name_acc_bank && name_acc_bank != "", do: String.upcase(name_acc_bank), else: "---"
+
+    formatted_name =
+      if name_acc_bank && name_acc_bank != "", do: String.upcase(name_acc_bank), else: "---"
 
     %{
       binBank: bin_bank,

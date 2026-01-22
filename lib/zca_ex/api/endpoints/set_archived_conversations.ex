@@ -22,7 +22,12 @@ defmodule ZcaEx.Api.Endpoints.SetArchivedConversations do
     - `{:ok, archive_response()}` on success
     - `{:error, Error.t()}` on failure
   """
-  @spec call(Session.t(), Credentials.t(), boolean(), conversation_target() | [conversation_target()]) ::
+  @spec call(
+          Session.t(),
+          Credentials.t(),
+          boolean(),
+          conversation_target() | [conversation_target()]
+        ) ::
           {:ok, archive_response()} | {:error, Error.t()}
   def call(session, credentials, is_archived, conversations) do
     conversations_list = normalize_conversations(conversations)
@@ -58,19 +63,26 @@ defmodule ZcaEx.Api.Endpoints.SetArchivedConversations do
   end
 
   @doc "Normalize conversations to list"
-  @spec normalize_conversations(conversation_target() | [conversation_target()]) :: [conversation_target()]
+  @spec normalize_conversations(conversation_target() | [conversation_target()]) :: [
+          conversation_target()
+        ]
   def normalize_conversations(conversations) when is_list(conversations), do: conversations
   def normalize_conversations(conversation) when is_map(conversation), do: [conversation]
 
   @doc "Validate conversations"
   @spec validate_conversations([conversation_target()]) :: :ok | {:error, Error.t()}
-  def validate_conversations([]), do: {:error, %Error{message: "conversations cannot be empty", code: nil}}
+  def validate_conversations([]),
+    do: {:error, %Error{message: "conversations cannot be empty", code: nil}}
 
   def validate_conversations(conversations) do
     if Enum.all?(conversations, &valid_conversation?/1) do
       :ok
     else
-      {:error, %Error{message: "each conversation must have :id (string) and :type (:user or :group)", code: nil}}
+      {:error,
+       %Error{
+         message: "each conversation must have :id (string) and :type (:user or :group)",
+         code: nil
+       }}
     end
   end
 

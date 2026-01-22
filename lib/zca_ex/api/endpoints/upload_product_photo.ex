@@ -46,7 +46,11 @@ defmodule ZcaEx.Api.Endpoints.UploadProductPhoto do
       case encrypt_params(session.secret_key, params) do
         {:ok, encrypted_params} ->
           url = build_url(service_url, encrypted_params, session)
-          parts = [{"chunkContent", image_data, filename: "undefined", content_type: "application/octet-stream"}]
+
+          parts = [
+            {"chunkContent", image_data,
+             filename: "undefined", content_type: "application/octet-stream"}
+          ]
 
           case AccountClient.post_multipart(session.uid, url, parts, credentials.user_agent) do
             {:ok, response} ->
@@ -66,9 +70,15 @@ defmodule ZcaEx.Api.Endpoints.UploadProductPhoto do
   end
 
   defp validate_image_data(data) when is_binary(data) and byte_size(data) > 0, do: :ok
-  defp validate_image_data(nil), do: {:error, Error.new(:api, "image_data is required", code: :invalid_input)}
-  defp validate_image_data(<<>>), do: {:error, Error.new(:api, "image_data cannot be empty", code: :invalid_input)}
-  defp validate_image_data(_), do: {:error, Error.new(:api, "image_data must be a binary", code: :invalid_input)}
+
+  defp validate_image_data(nil),
+    do: {:error, Error.new(:api, "image_data is required", code: :invalid_input)}
+
+  defp validate_image_data(<<>>),
+    do: {:error, Error.new(:api, "image_data cannot be empty", code: :invalid_input)}
+
+  defp validate_image_data(_),
+    do: {:error, Error.new(:api, "image_data must be a binary", code: :invalid_input)}
 
   @doc false
   def build_params(file_name, client_id, total_size, imei, toid) do

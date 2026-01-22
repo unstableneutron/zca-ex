@@ -75,13 +75,20 @@ defmodule ZcaEx.Api.Endpoints.AddPollOptions do
   @doc "Validate poll_id is a positive integer"
   @spec validate_poll_id(any()) :: :ok | {:error, Error.t()}
   def validate_poll_id(poll_id) when is_integer(poll_id) and poll_id > 0, do: :ok
-  def validate_poll_id(poll_id) when is_integer(poll_id), do: {:error, %Error{message: "poll_id must be a positive integer", code: nil}}
+
+  def validate_poll_id(poll_id) when is_integer(poll_id),
+    do: {:error, %Error{message: "poll_id must be a positive integer", code: nil}}
+
   def validate_poll_id(nil), do: {:error, %Error{message: "poll_id is required", code: nil}}
-  def validate_poll_id(_), do: {:error, %Error{message: "poll_id must be a positive integer", code: nil}}
+
+  def validate_poll_id(_),
+    do: {:error, %Error{message: "poll_id must be a positive integer", code: nil}}
 
   @doc "Validate new_options is a non-empty list"
   @spec validate_new_options(any()) :: :ok | {:error, Error.t()}
-  def validate_new_options([]), do: {:error, %Error{message: "options cannot be empty", code: nil}}
+  def validate_new_options([]),
+    do: {:error, %Error{message: "options cannot be empty", code: nil}}
+
   def validate_new_options(opts) when is_list(opts), do: :ok
   def validate_new_options(_), do: {:error, %Error{message: "options must be a list", code: nil}}
 
@@ -107,11 +114,12 @@ defmodule ZcaEx.Api.Endpoints.AddPollOptions do
 
     case Jason.encode(new_options) do
       {:ok, new_options_json} ->
-        {:ok, %{
-          poll_id: poll_id,
-          new_options: new_options_json,
-          voted_option_ids: voted_option_ids
-        }}
+        {:ok,
+         %{
+           poll_id: poll_id,
+           new_options: new_options_json,
+           voted_option_ids: voted_option_ids
+         }}
 
       {:error, reason} ->
         {:error, %Error{message: "Failed to encode options: #{inspect(reason)}", code: nil}}

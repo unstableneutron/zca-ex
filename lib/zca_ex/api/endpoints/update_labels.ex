@@ -111,8 +111,12 @@ defmodule ZcaEx.Api.Endpoints.UpdateLabels do
 
   defp encode_label_data(label_data) do
     case Jason.encode(label_data) do
-      {:ok, json} -> {:ok, json}
-      {:error, reason} -> {:error, Error.new(:api, "Failed to encode label_data: #{inspect(reason)}", code: :invalid_input)}
+      {:ok, json} ->
+        {:ok, json}
+
+      {:error, reason} ->
+        {:error,
+         Error.new(:api, "Failed to encode label_data: #{inspect(reason)}", code: :invalid_input)}
     end
   end
 

@@ -61,7 +61,12 @@ defmodule ZcaEx.Api.Endpoints.ResetHiddenConversPinTest do
 
   describe "build_url/3" do
     test "builds URL with encrypted params", %{session: session} do
-      url = ResetHiddenConversPin.build_url("https://conversation.zalo.me", "encryptedParams123", session)
+      url =
+        ResetHiddenConversPin.build_url(
+          "https://conversation.zalo.me",
+          "encryptedParams123",
+          session
+        )
 
       assert url =~ "https://conversation.zalo.me/api/hiddenconvers/reset"
       assert url =~ "params=encryptedParams123"

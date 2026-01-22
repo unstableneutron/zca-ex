@@ -67,27 +67,52 @@ defmodule ZcaEx.Api.Endpoints.SendReport do
 
   @doc false
   @spec validate_thread_id(term()) :: :ok | {:error, Error.t()}
-  def validate_thread_id(thread_id) when is_binary(thread_id) and byte_size(thread_id) > 0, do: :ok
-  def validate_thread_id(nil), do: {:error, Error.new(:api, "thread_id is required", code: :invalid_input)}
-  def validate_thread_id(<<>>), do: {:error, Error.new(:api, "thread_id cannot be empty", code: :invalid_input)}
-  def validate_thread_id(_), do: {:error, Error.new(:api, "thread_id must be a non-empty string", code: :invalid_input)}
+  def validate_thread_id(thread_id) when is_binary(thread_id) and byte_size(thread_id) > 0,
+    do: :ok
+
+  def validate_thread_id(nil),
+    do: {:error, Error.new(:api, "thread_id is required", code: :invalid_input)}
+
+  def validate_thread_id(<<>>),
+    do: {:error, Error.new(:api, "thread_id cannot be empty", code: :invalid_input)}
+
+  def validate_thread_id(_),
+    do: {:error, Error.new(:api, "thread_id must be a non-empty string", code: :invalid_input)}
 
   @doc false
   @spec validate_thread_type(term()) :: :ok | {:error, Error.t()}
   def validate_thread_type(type) when type in [:user, :group], do: :ok
-  def validate_thread_type(_), do: {:error, Error.new(:api, "thread_type must be :user or :group", code: :invalid_input)}
+
+  def validate_thread_type(_),
+    do: {:error, Error.new(:api, "thread_type must be :user or :group", code: :invalid_input)}
 
   @doc false
   @spec validate_reason(term()) :: :ok | {:error, Error.t()}
   def validate_reason(reason) when reason in @valid_reasons, do: :ok
-  def validate_reason(_), do: {:error, Error.new(:api, "reason must be :sensitive, :annoy, :fraud, or :other", code: :invalid_input)}
+
+  def validate_reason(_),
+    do:
+      {:error,
+       Error.new(:api, "reason must be :sensitive, :annoy, :fraud, or :other",
+         code: :invalid_input
+       )}
 
   @doc false
   @spec validate_content(reason(), term()) :: :ok | {:error, Error.t()}
-  def validate_content(:other, nil), do: {:error, Error.new(:api, "content is required when reason is :other", code: :invalid_input)}
-  def validate_content(:other, <<>>), do: {:error, Error.new(:api, "content cannot be empty when reason is :other", code: :invalid_input)}
+  def validate_content(:other, nil),
+    do:
+      {:error, Error.new(:api, "content is required when reason is :other", code: :invalid_input)}
+
+  def validate_content(:other, <<>>),
+    do:
+      {:error,
+       Error.new(:api, "content cannot be empty when reason is :other", code: :invalid_input)}
+
   def validate_content(:other, content) when is_binary(content), do: :ok
-  def validate_content(:other, _), do: {:error, Error.new(:api, "content must be a string", code: :invalid_input)}
+
+  def validate_content(:other, _),
+    do: {:error, Error.new(:api, "content must be a string", code: :invalid_input)}
+
   def validate_content(_, _), do: :ok
 
   @doc false
@@ -156,10 +181,14 @@ defmodule ZcaEx.Api.Endpoints.SendReport do
 
   defp transform_response(data) when is_map(data) do
     case data["reportId"] || data[:reportId] do
-      nil -> {:error, Error.new(:api, "Invalid response: missing reportId", code: :invalid_response)}
-      report_id -> {:ok, %{report_id: to_string(report_id)}}
+      nil ->
+        {:error, Error.new(:api, "Invalid response: missing reportId", code: :invalid_response)}
+
+      report_id ->
+        {:ok, %{report_id: to_string(report_id)}}
     end
   end
 
-  defp transform_response(_), do: {:error, Error.new(:api, "Invalid response format", code: :invalid_response)}
+  defp transform_response(_),
+    do: {:error, Error.new(:api, "Invalid response format", code: :invalid_response)}
 end

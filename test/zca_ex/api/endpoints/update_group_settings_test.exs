@@ -29,7 +29,9 @@ defmodule ZcaEx.Api.Endpoints.UpdateGroupSettingsTest do
   end
 
   describe "build_params/3" do
-    test "builds params with all default values when settings is empty", %{credentials: credentials} do
+    test "builds params with all default values when settings is empty", %{
+      credentials: credentials
+    } do
       params = UpdateGroupSettings.build_params(%{}, "group123", credentials)
 
       assert params == %{

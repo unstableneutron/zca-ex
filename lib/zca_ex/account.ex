@@ -15,8 +15,7 @@ defmodule ZcaEx.Account do
   """
   @spec health(term()) ::
           :ok
-          | {:error,
-             :not_found | :partial_start | :cookie_jar_dead | :manager_dead | :ws_dead}
+          | {:error, :not_found | :partial_start | :cookie_jar_dead | :manager_dead | :ws_dead}
   def health(account_id) do
     results = [
       {:cookie_jar, lookup_process(:cookie_jar, account_id)},

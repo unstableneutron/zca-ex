@@ -33,11 +33,12 @@ defmodule ZcaEx.Api.Endpoints.UploadProductPhotoTest do
 
   describe "build_params/5" do
     test "builds correct params" do
-      params = UploadProductPhoto.build_params("test.jpg", 1234567890, 1024, "imei123", "send2me_456")
+      params =
+        UploadProductPhoto.build_params("test.jpg", 1_234_567_890, 1024, "imei123", "send2me_456")
 
       assert params.totalChunk == 1
       assert params.fileName == "test.jpg"
-      assert params.clientId == 1234567890
+      assert params.clientId == 1_234_567_890
       assert params.totalSize == 1024
       assert params.imei == "imei123"
       assert params.chunkId == 1

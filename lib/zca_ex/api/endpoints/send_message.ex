@@ -53,7 +53,14 @@ defmodule ZcaEx.Api.Endpoints.SendMessage do
 
   Returns `{:ok, %{msg_id: integer(), client_id: integer()}}` on success.
   """
-  @spec send(message_content(), String.t(), :user | :group, Session.t(), Credentials.t(), keyword()) ::
+  @spec send(
+          message_content(),
+          String.t(),
+          :user | :group,
+          Session.t(),
+          Credentials.t(),
+          keyword()
+        ) ::
           send_result()
   def send(message, thread_id, thread_type, session, credentials, opts \\ [])
 
@@ -120,7 +127,8 @@ defmodule ZcaEx.Api.Endpoints.SendMessage do
   def get_path(:user, false, _has_mentions), do: "/sms"
 
   @doc "Build API params from message content"
-  @spec build_params(map(), String.t(), :user | :group, [map()], Credentials.t(), integer()) :: map()
+  @spec build_params(map(), String.t(), :user | :group, [map()], Credentials.t(), integer()) ::
+          map()
   def build_params(content, thread_id, thread_type, mentions, creds, client_id) do
     base_params =
       if content[:quote] do
@@ -229,7 +237,8 @@ defmodule ZcaEx.Api.Endpoints.SendMessage do
     total_len = Enum.reduce(filtered, 0, fn m, acc -> acc + m.len end)
 
     if total_len > String.length(msg) do
-      {:error, %Error{message: "Invalid mentions: total mention len exceeds message length", code: nil}}
+      {:error,
+       %Error{message: "Invalid mentions: total mention len exceeds message length", code: nil}}
     else
       {:ok, filtered}
     end
@@ -238,7 +247,9 @@ defmodule ZcaEx.Api.Endpoints.SendMessage do
   defp get_mention_field(%Mention{} = m, :pos), do: m.pos
   defp get_mention_field(%Mention{} = m, :uid), do: m.uid
   defp get_mention_field(%Mention{} = m, :len), do: m.len
-  defp get_mention_field(m, field) when is_map(m), do: Map.get(m, field) || Map.get(m, to_string(field))
+
+  defp get_mention_field(m, field) when is_map(m),
+    do: Map.get(m, field) || Map.get(m, to_string(field))
 
   defp validate_message(msg) when is_binary(msg) and byte_size(msg) > 0, do: :ok
   defp validate_message(_), do: {:error, %Error{message: "Missing message content", code: nil}}
@@ -271,7 +282,8 @@ defmodule ZcaEx.Api.Endpoints.SendMessage do
   defp get_client_message_type("chat.todo"), do: 10
   defp get_client_message_type(_), do: 0
 
-  defp prepare_qmsg(%{msg_type: "chat.todo", content: %{"params" => params}}) when is_binary(params) do
+  defp prepare_qmsg(%{msg_type: "chat.todo", content: %{"params" => params}})
+       when is_binary(params) do
     case Jason.decode(params) do
       {:ok, %{"item" => %{"content" => content}}} -> content
       _ -> ""

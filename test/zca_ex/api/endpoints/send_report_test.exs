@@ -217,7 +217,9 @@ defmodule ZcaEx.Api.Endpoints.SendReportTest do
     end
 
     test "returns error for invalid thread_type", %{session: session, credentials: credentials} do
-      assert {:error, error} = SendReport.call(session, credentials, "user123", :invalid, :sensitive)
+      assert {:error, error} =
+               SendReport.call(session, credentials, "user123", :invalid, :sensitive)
+
       assert error.message =~ ":user or :group"
     end
 
@@ -231,7 +233,10 @@ defmodule ZcaEx.Api.Endpoints.SendReportTest do
       assert error.message =~ "content is required"
     end
 
-    test "returns error for :other with empty content", %{session: session, credentials: credentials} do
+    test "returns error for :other with empty content", %{
+      session: session,
+      credentials: credentials
+    } do
       assert {:error, error} = SendReport.call(session, credentials, "user123", :user, :other, "")
       assert error.code == :invalid_input
     end
@@ -239,7 +244,9 @@ defmodule ZcaEx.Api.Endpoints.SendReportTest do
     test "returns error for missing service URL", %{session: session, credentials: credentials} do
       session_no_service = %{session | zpw_service_map: %{}}
 
-      assert {:error, error} = SendReport.call(session_no_service, credentials, "user123", :user, :sensitive)
+      assert {:error, error} =
+               SendReport.call(session_no_service, credentials, "user123", :user, :sensitive)
+
       assert error.message == "profile service URL not found"
       assert error.code == :service_not_found
     end

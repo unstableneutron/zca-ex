@@ -99,10 +99,15 @@ defmodule ZcaEx.Api.Endpoints.GetPollDetailTest do
         "creator" => "user456",
         "question" => "Test question?",
         "options" => [
-          %{"option_id" => 1, "content" => "Option A", "vote_count" => 10, "voters" => ["u1", "u2"]},
+          %{
+            "option_id" => 1,
+            "content" => "Option A",
+            "vote_count" => 10,
+            "voters" => ["u1", "u2"]
+          },
           %{"option_id" => 2, "content" => "Option B", "vote_count" => 5, "voters" => ["u3"]}
         ],
-        "created_time" => 1609459200000,
+        "created_time" => 1_609_459_200_000,
         "expired_time" => 0,
         "allow_multi_choices" => true,
         "allow_add_new_option" => false,

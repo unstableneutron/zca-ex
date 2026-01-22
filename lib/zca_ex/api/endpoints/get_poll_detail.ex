@@ -49,9 +49,14 @@ defmodule ZcaEx.Api.Endpoints.GetPollDetail do
   @doc "Validate poll_id"
   @spec validate_poll_id(term()) :: :ok | {:error, Error.t()}
   def validate_poll_id(poll_id) when is_integer(poll_id) and poll_id > 0, do: :ok
-  def validate_poll_id(poll_id) when is_integer(poll_id), do: {:error, %Error{message: "poll_id must be a positive integer", code: nil}}
+
+  def validate_poll_id(poll_id) when is_integer(poll_id),
+    do: {:error, %Error{message: "poll_id must be a positive integer", code: nil}}
+
   def validate_poll_id(nil), do: {:error, %Error{message: "poll_id is required", code: nil}}
-  def validate_poll_id(_), do: {:error, %Error{message: "poll_id must be a positive integer", code: nil}}
+
+  def validate_poll_id(_),
+    do: {:error, %Error{message: "poll_id must be a positive integer", code: nil}}
 
   @doc "Build URL for get poll detail endpoint"
   @spec build_url(Session.t()) :: String.t()

@@ -269,7 +269,9 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachmentTest do
     end
 
     test "returns error for non-existent file path", %{session: session, credentials: creds} do
-      {:error, error} = UploadAttachment.upload("/nonexistent/file.jpg", "thread123", :user, session, creds)
+      {:error, error} =
+        UploadAttachment.upload("/nonexistent/file.jpg", "thread123", :user, session, creds)
+
       assert error.message =~ "File not found"
     end
 
@@ -281,6 +283,7 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachmentTest do
 
     test "returns error when exceeding max file count", %{session: session, credentials: creds} do
       session = put_in(session.settings["features"]["sharefile"]["max_file"], 2)
+
       sources = [
         AttachmentSource.from_binary(<<1>>, "a.txt"),
         AttachmentSource.from_binary(<<2>>, "b.txt"),
@@ -333,7 +336,9 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachmentTest do
     end
 
     test "restricted extension check is case-insensitive", %{session: session, credentials: creds} do
-      session = put_in(session.settings["features"]["sharefile"]["restricted_ext_file"], ["EXE", "BAT"])
+      session =
+        put_in(session.settings["features"]["sharefile"]["restricted_ext_file"], ["EXE", "BAT"])
+
       source = AttachmentSource.from_binary(<<1, 2, 3>>, "test.exe")
       result = UploadAttachment.upload(source, "thread_id", :user, session, creds)
       assert {:error, %ZcaEx.Error{message: msg}} = result

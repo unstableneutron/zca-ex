@@ -108,7 +108,7 @@ defmodule ZcaEx.Account.SessionTest do
 
     test "converts integer uid to string" do
       map = %{
-        "uid" => 123456,
+        "uid" => 123_456,
         "secret_key" => "secret",
         "zpw_service_map" => %{}
       }
@@ -214,7 +214,7 @@ defmodule ZcaEx.Account.SessionTest do
   describe "Session.from_login_response/1" do
     test "creates session from login response" do
       data = %{
-        "uid" => 123456,
+        "uid" => 123_456,
         "zpw_enk" => "secret-key",
         "zpw_service_map_v3" => %{"chat" => "https://chat.zalo.me"},
         "settings" => %{"theme" => "dark"},

@@ -88,13 +88,13 @@ defmodule ZcaEx.WS.Router do
   def route({_version, _cmd, _sub_cmd}), do: {:unknown, nil}
 
   @decrypted_events MapSet.new([
-    :message,
-    :reaction,
-    :old_reactions,
-    :old_messages,
-    :typing,
-    :seen_delivered
-  ])
+                      :message,
+                      :reaction,
+                      :old_reactions,
+                      :old_messages,
+                      :typing,
+                      :seen_delivered
+                    ])
 
   @doc """
   Check if this event type requires AES-GCM decryption.

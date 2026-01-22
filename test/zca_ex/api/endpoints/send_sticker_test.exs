@@ -48,7 +48,10 @@ defmodule ZcaEx.Api.Endpoints.SendStickerTest do
       assert error.message =~ "id"
     end
 
-    test "returns error for missing sticker cate_id", %{session: session, credentials: credentials} do
+    test "returns error for missing sticker cate_id", %{
+      session: session,
+      credentials: credentials
+    } do
       sticker = %{id: 1, type: 1}
       result = SendSticker.call(sticker, "user123", :user, session, credentials)
 

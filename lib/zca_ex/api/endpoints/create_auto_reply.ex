@@ -34,7 +34,16 @@ defmodule ZcaEx.Api.Endpoints.CreateAutoReply do
     - `{:ok, %{item: map(), version: integer()}}` on success
     - `{:error, Error.t()}` on failure
   """
-  @spec create(String.t(), boolean(), integer(), integer(), integer(), String.t() | [String.t()] | nil, Session.t(), Credentials.t()) ::
+  @spec create(
+          String.t(),
+          boolean(),
+          integer(),
+          integer(),
+          integer(),
+          String.t() | [String.t()] | nil,
+          Session.t(),
+          Credentials.t()
+        ) ::
           {:ok, map()} | {:error, Error.t()}
   def create(content, enabled?, start_time, end_time, scope, uids, session, credentials) do
     with :ok <- validate_content(content),
@@ -68,27 +77,37 @@ defmodule ZcaEx.Api.Endpoints.CreateAutoReply do
   end
 
   defp validate_content(content) when is_binary(content) and byte_size(content) > 0, do: :ok
-  defp validate_content(_), do: {:error, Error.new(:api, "content must be a non-empty string", code: :invalid_input)}
+
+  defp validate_content(_),
+    do: {:error, Error.new(:api, "content must be a non-empty string", code: :invalid_input)}
 
   defp validate_enabled(enabled?) when is_boolean(enabled?), do: :ok
-  defp validate_enabled(_), do: {:error, Error.new(:api, "enabled? must be a boolean", code: :invalid_input)}
+
+  defp validate_enabled(_),
+    do: {:error, Error.new(:api, "enabled? must be a boolean", code: :invalid_input)}
 
   defp validate_times(start_time, end_time)
-       when is_integer(start_time) and is_integer(end_time) and start_time >= 0 and end_time > start_time do
+       when is_integer(start_time) and is_integer(end_time) and start_time >= 0 and
+              end_time > start_time do
     :ok
   end
+
   defp validate_times(start_time, _) when not is_integer(start_time) or start_time < 0 do
     {:error, Error.new(:api, "start_time must be a non-negative integer", code: :invalid_input)}
   end
+
   defp validate_times(_, end_time) when not is_integer(end_time) do
     {:error, Error.new(:api, "end_time must be an integer", code: :invalid_input)}
   end
+
   defp validate_times(_, _) do
     {:error, Error.new(:api, "end_time must be greater than start_time", code: :invalid_input)}
   end
 
   defp validate_scope(scope) when scope in @valid_scopes, do: :ok
-  defp validate_scope(_), do: {:error, Error.new(:api, "scope must be 0, 1, 2, or 3", code: :invalid_input)}
+
+  defp validate_scope(_),
+    do: {:error, Error.new(:api, "scope must be 0, 1, 2, or 3", code: :invalid_input)}
 
   defp validate_uids(scope, uids) when scope in [2, 3] do
     case normalize_uids(uids) do
@@ -96,6 +115,7 @@ defmodule ZcaEx.Api.Endpoints.CreateAutoReply do
       _ -> :ok
     end
   end
+
   defp validate_uids(_scope, _uids), do: :ok
 
   defp normalize_uids(nil), do: []

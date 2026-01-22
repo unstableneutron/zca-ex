@@ -84,7 +84,9 @@ defmodule ZcaEx.Api.Endpoints.AddPollOptionsTest do
 
     test "builds params with voted_option_ids" do
       new_options = [%{voted: true, content: "New option"}]
-      {:ok, params} = AddPollOptions.build_params(123, options: new_options, voted_option_ids: [1, 2])
+
+      {:ok, params} =
+        AddPollOptions.build_params(123, options: new_options, voted_option_ids: [1, 2])
 
       assert params.poll_id == 123
       assert params.voted_option_ids == [1, 2]
@@ -124,12 +126,16 @@ defmodule ZcaEx.Api.Endpoints.AddPollOptionsTest do
   describe "call/4 validation" do
     test "returns error when poll_id is nil", %{session: session, credentials: credentials} do
       assert {:error, %ZcaEx.Error{message: "poll_id is required"}} =
-               AddPollOptions.call(nil, session, credentials, options: [%{voted: true, content: "New"}])
+               AddPollOptions.call(nil, session, credentials,
+                 options: [%{voted: true, content: "New"}]
+               )
     end
 
     test "returns error when poll_id is zero", %{session: session, credentials: credentials} do
       assert {:error, %ZcaEx.Error{message: "poll_id must be a positive integer"}} =
-               AddPollOptions.call(0, session, credentials, options: [%{voted: true, content: "New"}])
+               AddPollOptions.call(0, session, credentials,
+                 options: [%{voted: true, content: "New"}]
+               )
     end
 
     test "returns error when options is empty", %{session: session, credentials: credentials} do
@@ -142,8 +148,20 @@ defmodule ZcaEx.Api.Endpoints.AddPollOptionsTest do
     test "transforms options correctly" do
       data = %{
         "options" => [
-          %{"option_id" => 1, "content" => "Option A", "votes" => 5, "voted" => true, "voters" => ["u1"]},
-          %{"option_id" => 2, "content" => "Option B", "votes" => 3, "voted" => false, "voters" => []}
+          %{
+            "option_id" => 1,
+            "content" => "Option A",
+            "votes" => 5,
+            "voted" => true,
+            "voters" => ["u1"]
+          },
+          %{
+            "option_id" => 2,
+            "content" => "Option B",
+            "votes" => 3,
+            "voted" => false,
+            "voters" => []
+          }
         ]
       }
 

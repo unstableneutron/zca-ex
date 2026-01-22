@@ -17,7 +17,10 @@ defmodule ZcaEx.Api.Endpoints.DeleteMessageTest do
   end
 
   describe "call/4 validation" do
-    test "returns error when deleting own message for everyone", %{session: session, credentials: credentials} do
+    test "returns error when deleting own message for everyone", %{
+      session: session,
+      credentials: credentials
+    } do
       destination = %{
         data: %{
           cli_msg_id: "1000",
@@ -34,7 +37,10 @@ defmodule ZcaEx.Api.Endpoints.DeleteMessageTest do
       assert error.message =~ "Use undo API instead"
     end
 
-    test "returns error when deleting for everyone in private chat", %{session: session, credentials: credentials} do
+    test "returns error when deleting for everyone in private chat", %{
+      session: session,
+      credentials: credentials
+    } do
       destination = %{
         data: %{
           cli_msg_id: "1000",
@@ -78,7 +84,10 @@ defmodule ZcaEx.Api.Endpoints.DeleteMessageTest do
       assert {:ok, %{status: 1}} = result
     end
 
-    test "deletes message for self only in user chat", %{session: session, credentials: credentials} do
+    test "deletes message for self only in user chat", %{
+      session: session,
+      credentials: credentials
+    } do
       response_data = %{"status" => 1}
       response = Fixtures.build_success_response(response_data, session.secret_key)
 

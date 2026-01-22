@@ -211,7 +211,10 @@ defmodule ZcaEx.Api.Endpoints.GetListBoardTest do
       assert error.message =~ "group_id must be a non-empty string"
     end
 
-    test "returns error when group_id is not a string", %{session: session, credentials: credentials} do
+    test "returns error when group_id is not a string", %{
+      session: session,
+      credentials: credentials
+    } do
       assert {:error, error} = GetListBoard.call(123, session, credentials)
       assert error.code == :invalid_input
       assert error.message =~ "group_id must be a non-empty string"

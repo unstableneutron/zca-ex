@@ -100,9 +100,14 @@ defmodule ZcaEx.Api.Endpoints.UpdateHiddenConversPin do
   @spec get_service_url(Session.t()) :: {:ok, String.t()} | {:error, Error.t()}
   defp get_service_url(session) do
     case get_in(session.zpw_service_map, ["conversation"]) do
-      [url | _] when is_binary(url) -> {:ok, url}
-      url when is_binary(url) -> {:ok, url}
-      _ -> {:error, Error.new(:api, "conversation service URL not found", code: :service_not_found)}
+      [url | _] when is_binary(url) ->
+        {:ok, url}
+
+      url when is_binary(url) ->
+        {:ok, url}
+
+      _ ->
+        {:error, Error.new(:api, "conversation service URL not found", code: :service_not_found)}
     end
   end
 end

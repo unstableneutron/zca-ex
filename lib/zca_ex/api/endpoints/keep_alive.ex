@@ -38,7 +38,8 @@ defmodule ZcaEx.Api.Endpoints.KeepAlive do
                 end
 
               {:error, reason} ->
-                {:error, Error.new(:network, "Request failed: #{inspect(reason)}", reason: reason)}
+                {:error,
+                 Error.new(:network, "Request failed: #{inspect(reason)}", reason: reason)}
             end
 
           {:error, _} = error ->
@@ -90,12 +91,14 @@ defmodule ZcaEx.Api.Endpoints.KeepAlive do
   end
 
   defp coerce_to_integer(val) when is_integer(val), do: val
+
   defp coerce_to_integer(val) when is_binary(val) do
     case Integer.parse(val) do
       {int, _} -> int
       :error -> 0
     end
   end
+
   defp coerce_to_integer(_), do: 0
 
   defp get_service_url(session) do

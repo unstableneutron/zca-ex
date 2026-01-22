@@ -64,7 +64,9 @@ defmodule ZcaEx.Api.Endpoints.UpdateLang do
   def validate_language("EN"), do: :ok
   def validate_language("vi"), do: :ok
   def validate_language("en"), do: :ok
-  def validate_language(_), do: {:error, %Error{message: "Language must be :vi, :en, \"VI\", or \"EN\"", code: nil}}
+
+  def validate_language(_),
+    do: {:error, %Error{message: "Language must be :vi, :en, \"VI\", or \"EN\"", code: nil}}
 
   @doc "Normalize language to API format"
   @spec normalize_language(language()) :: String.t()

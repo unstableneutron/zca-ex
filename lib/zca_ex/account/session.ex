@@ -30,7 +30,8 @@ defmodule ZcaEx.Account.Session do
     %__MODULE__{
       uid: to_string(get_in(data, ["uid"]) || get_in(data, [:uid])),
       secret_key: get_in(data, ["zpw_enk"]) || get_in(data, [:zpw_enk]),
-      zpw_service_map: get_in(data, ["zpw_service_map_v3"]) || get_in(data, [:zpw_service_map_v3]) || %{},
+      zpw_service_map:
+        get_in(data, ["zpw_service_map_v3"]) || get_in(data, [:zpw_service_map_v3]) || %{},
       settings: get_in(data, ["settings"]) || get_in(data, [:settings]),
       login_info: extract_login_info(data),
       extra_ver: get_in(data, ["extra_ver"]) || get_in(data, [:extra_ver])

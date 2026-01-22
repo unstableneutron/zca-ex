@@ -76,7 +76,10 @@ defmodule ZcaEx.Api.Endpoints.DeleteAutoReplyTest do
       assert error.message == "id must be a positive integer"
     end
 
-    test "returns error for missing service URL with valid id", %{session: session, credentials: credentials} do
+    test "returns error for missing service URL with valid id", %{
+      session: session,
+      credentials: credentials
+    } do
       session_no_service = %{session | zpw_service_map: %{}}
       result = DeleteAutoReply.delete(123, session_no_service, credentials)
 

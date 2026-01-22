@@ -73,6 +73,7 @@ defmodule ZcaEx.Api.Endpoints.UpdateActiveStatus do
 
   defp get_service_url(session, service) do
     service_key = to_string(service)
+
     case get_in(session.zpw_service_map, [service_key]) do
       [url | _] when is_binary(url) -> url
       url when is_binary(url) -> url

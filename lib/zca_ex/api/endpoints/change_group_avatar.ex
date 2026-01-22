@@ -35,7 +35,8 @@ defmodule ZcaEx.Api.Endpoints.ChangeGroupAvatar do
 
     with :ok <- validate_image_data(image_data),
          :ok <- validate_group_id(group_id),
-         {:ok, encrypted_params} <- encrypt_params(session.secret_key, build_params(group_id, credentials, width, height)) do
+         {:ok, encrypted_params} <-
+           encrypt_params(session.secret_key, build_params(group_id, credentials, width, height)) do
       url = build_url(session, encrypted_params)
       parts = build_multipart_parts(image_data)
 

@@ -30,7 +30,8 @@ defmodule ZcaEx.Api.Endpoints.ChangeGroupOwner do
   def call(new_owner_id, group_id, session, credentials) do
     with :ok <- validate_new_owner_id(new_owner_id),
          :ok <- validate_group_id(group_id),
-         {:ok, encrypted_params} <- encrypt_params(session.secret_key, build_params(new_owner_id, group_id, credentials)) do
+         {:ok, encrypted_params} <-
+           encrypt_params(session.secret_key, build_params(new_owner_id, group_id, credentials)) do
       url = build_url(session, encrypted_params)
 
       case AccountClient.get(session.uid, url, credentials.user_agent) do
@@ -61,7 +62,9 @@ defmodule ZcaEx.Api.Endpoints.ChangeGroupOwner do
     Url.build_for_session(base_url, %{params: encrypted_params}, session)
   end
 
-  defp validate_new_owner_id(nil), do: {:error, %Error{message: "Missing new_owner_id", code: nil}}
+  defp validate_new_owner_id(nil),
+    do: {:error, %Error{message: "Missing new_owner_id", code: nil}}
+
   defp validate_new_owner_id(""), do: {:error, %Error{message: "Missing new_owner_id", code: nil}}
   defp validate_new_owner_id(id) when is_binary(id), do: :ok
   defp validate_new_owner_id(_), do: {:error, %Error{message: "Invalid new_owner_id", code: nil}}

@@ -65,7 +65,10 @@ defmodule ZcaEx.Api.Endpoints.DeleteMessage do
     end
   end
 
-  defp validate_destination(%{data: %{cli_msg_id: _, msg_id: _, uid_from: _}, thread_id: thread_id})
+  defp validate_destination(%{
+         data: %{cli_msg_id: _, msg_id: _, uid_from: _},
+         thread_id: thread_id
+       })
        when is_binary(thread_id) and byte_size(thread_id) > 0 do
     :ok
   end
@@ -73,13 +76,15 @@ defmodule ZcaEx.Api.Endpoints.DeleteMessage do
   defp validate_destination(_) do
     {:error,
      %ZcaEx.Error{
-       message: "Invalid destination: must have data (cli_msg_id, msg_id, uid_from) and thread_id",
+       message:
+         "Invalid destination: must have data (cli_msg_id, msg_id, uid_from) and thread_id",
        code: nil
      }}
   end
 
   defp validate_delete(true, false, _thread_type) do
-    {:error, ZcaEx.Error.api(nil, "Cannot delete own message for everyone. Use undo API instead.")}
+    {:error,
+     ZcaEx.Error.api(nil, "Cannot delete own message for everyone. Use undo API instead.")}
   end
 
   defp validate_delete(_is_self, false, :user) do

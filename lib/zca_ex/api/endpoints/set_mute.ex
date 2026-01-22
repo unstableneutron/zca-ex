@@ -67,13 +67,18 @@ defmodule ZcaEx.Api.Endpoints.SetMute do
 
   @doc "Validate thread_id"
   @spec validate_thread_id(term()) :: :ok | {:error, Error.t()}
-  def validate_thread_id(thread_id) when is_binary(thread_id) and byte_size(thread_id) > 0, do: :ok
+  def validate_thread_id(thread_id) when is_binary(thread_id) and byte_size(thread_id) > 0,
+    do: :ok
+
   def validate_thread_id(""), do: {:error, %Error{message: "thread_id is required", code: nil}}
   def validate_thread_id(nil), do: {:error, %Error{message: "thread_id is required", code: nil}}
-  def validate_thread_id(_), do: {:error, %Error{message: "thread_id must be a non-empty string", code: nil}}
+
+  def validate_thread_id(_),
+    do: {:error, %Error{message: "thread_id must be a non-empty string", code: nil}}
 
   @doc "Build params for encryption"
-  @spec build_params(String.t(), :user | :group, mute_action(), mute_duration(), String.t()) :: map()
+  @spec build_params(String.t(), :user | :group, mute_action(), mute_duration(), String.t()) ::
+          map()
   def build_params(thread_id, thread_type, action, duration_opt, imei) do
     action_value = action_to_value(action)
     duration_value = calculate_duration(action, duration_opt)

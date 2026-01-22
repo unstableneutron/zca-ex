@@ -32,24 +32,39 @@ defmodule ZcaEx.Api.Endpoints.SendSeenEvent do
     - `:ok` on success
     - `{:error, Error.t()}` on failure
   """
-  @spec call(message_params() | [message_params()], Enums.thread_type(), Session.t(), Credentials.t()) ::
+  @spec call(
+          message_params() | [message_params()],
+          Enums.thread_type(),
+          Session.t(),
+          Credentials.t()
+        ) ::
           :ok | {:error, ZcaEx.Error.t()}
   def call(messages, thread_type, session, credentials)
 
   def call(nil, _thread_type, _session, _credentials) do
-    {:error, %ZcaEx.Error{message: "messages are missing or not in a valid array format", code: nil}}
+    {:error,
+     %ZcaEx.Error{message: "messages are missing or not in a valid array format", code: nil}}
   end
 
   def call([], _thread_type, _session, _credentials) do
-    {:error, %ZcaEx.Error{message: "messages must contain between 1 and #{@max_messages_per_send} messages", code: nil}}
+    {:error,
+     %ZcaEx.Error{
+       message: "messages must contain between 1 and #{@max_messages_per_send} messages",
+       code: nil
+     }}
   end
 
   def call(messages, thread_type, session, credentials) when not is_list(messages) do
     call([messages], thread_type, session, credentials)
   end
 
-  def call(messages, _thread_type, _session, _credentials) when length(messages) > @max_messages_per_send do
-    {:error, %ZcaEx.Error{message: "messages must contain between 1 and #{@max_messages_per_send} messages", code: nil}}
+  def call(messages, _thread_type, _session, _credentials)
+      when length(messages) > @max_messages_per_send do
+    {:error,
+     %ZcaEx.Error{
+       message: "messages must contain between 1 and #{@max_messages_per_send} messages",
+       code: nil
+     }}
   end
 
   def call(messages, thread_type, session, credentials) do

@@ -39,7 +39,15 @@ defmodule ZcaEx.Api.Endpoints.CreateProductCatalog do
     - `{:ok, %{item: map, version_ls_catalog: integer, version_catalog: integer}}` on success
     - `{:error, Error.t()}` on failure
   """
-  @spec create(String.t(), String.t(), String.t(), String.t(), [String.t()], Session.t(), Credentials.t()) ::
+  @spec create(
+          String.t(),
+          String.t(),
+          String.t(),
+          String.t(),
+          [String.t()],
+          Session.t(),
+          Credentials.t()
+        ) ::
           {:ok, map()} | {:error, Error.t()}
   def create(catalog_id, product_name, price, description, product_photos, session, credentials) do
     with :ok <- validate_catalog_id(catalog_id),
@@ -72,29 +80,50 @@ defmodule ZcaEx.Api.Endpoints.CreateProductCatalog do
     end
   end
 
-  defp validate_catalog_id(catalog_id) when is_binary(catalog_id) and byte_size(catalog_id) > 0, do: :ok
-  defp validate_catalog_id(_), do: {:error, Error.new(:api, "catalog_id must be a non-empty string", code: :invalid_input)}
+  defp validate_catalog_id(catalog_id) when is_binary(catalog_id) and byte_size(catalog_id) > 0,
+    do: :ok
 
-  defp validate_product_name(product_name) when is_binary(product_name) and byte_size(product_name) > 0, do: :ok
-  defp validate_product_name(_), do: {:error, Error.new(:api, "product_name must be a non-empty string", code: :invalid_input)}
+  defp validate_catalog_id(_),
+    do: {:error, Error.new(:api, "catalog_id must be a non-empty string", code: :invalid_input)}
+
+  defp validate_product_name(product_name)
+       when is_binary(product_name) and byte_size(product_name) > 0,
+       do: :ok
+
+  defp validate_product_name(_),
+    do: {:error, Error.new(:api, "product_name must be a non-empty string", code: :invalid_input)}
 
   defp validate_price(price) when is_binary(price) and byte_size(price) > 0, do: :ok
-  defp validate_price(_), do: {:error, Error.new(:api, "price must be a non-empty string", code: :invalid_input)}
 
-  defp validate_description(description) when is_binary(description) and byte_size(description) > 0, do: :ok
-  defp validate_description(_), do: {:error, Error.new(:api, "description must be a non-empty string", code: :invalid_input)}
+  defp validate_price(_),
+    do: {:error, Error.new(:api, "price must be a non-empty string", code: :invalid_input)}
+
+  defp validate_description(description)
+       when is_binary(description) and byte_size(description) > 0,
+       do: :ok
+
+  defp validate_description(_),
+    do: {:error, Error.new(:api, "description must be a non-empty string", code: :invalid_input)}
 
   defp validate_product_photos(photos) when is_list(photos) do
     cond do
       length(photos) > @max_photos ->
-        {:error, Error.new(:api, "product_photos must have at most #{@max_photos} items", code: :invalid_input)}
+        {:error,
+         Error.new(:api, "product_photos must have at most #{@max_photos} items",
+           code: :invalid_input
+         )}
+
       not Enum.all?(photos, &is_binary/1) ->
-        {:error, Error.new(:api, "product_photos must contain only strings", code: :invalid_input)}
+        {:error,
+         Error.new(:api, "product_photos must contain only strings", code: :invalid_input)}
+
       true ->
         :ok
     end
   end
-  defp validate_product_photos(_), do: {:error, Error.new(:api, "product_photos must be a list", code: :invalid_input)}
+
+  defp validate_product_photos(_),
+    do: {:error, Error.new(:api, "product_photos must be a list", code: :invalid_input)}
 
   @doc false
   def build_params(catalog_id, product_name, price, description, product_photos) do

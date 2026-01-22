@@ -25,6 +25,7 @@ defmodule ZcaEx.Crypto.ParamsEncryptorTest do
         encryptor = ParamsEncryptor.new(type, imei, first_launch_time, zcid_ext)
 
         params = ParamsEncryptor.get_params(encryptor)
+
         assert params.zcid == expected_zcid,
                "ZCID mismatch, expected: #{expected_zcid}, got: #{params.zcid}"
 
@@ -32,6 +33,7 @@ defmodule ZcaEx.Crypto.ParamsEncryptorTest do
         assert params.enc_ver == "v2"
 
         encrypt_key = ParamsEncryptor.get_encrypt_key(encryptor)
+
         assert encrypt_key == expected_encrypt_key,
                "Encrypt key mismatch, expected: #{expected_encrypt_key}, got: #{encrypt_key}"
       end
@@ -59,6 +61,7 @@ defmodule ZcaEx.Crypto.ParamsEncryptorTest do
   describe "encode_aes/4" do
     test "encrypts correctly", %{fixtures: fixtures} do
       [fixture | _] = fixtures["aes_cbc"]
+
       %{
         "key" => key,
         "message" => message,

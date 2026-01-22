@@ -47,7 +47,9 @@ defmodule ZcaEx.Api.Endpoints.ReuseAvatar do
 
   @spec validate_photo_id(term()) :: :ok | {:error, Error.t()}
   def validate_photo_id(id) when is_binary(id) and byte_size(id) > 0, do: :ok
-  def validate_photo_id(_), do: {:error, %Error{message: "Photo ID must be a non-empty string", code: nil}}
+
+  def validate_photo_id(_),
+    do: {:error, %Error{message: "Photo ID must be a non-empty string", code: nil}}
 
   @spec build_url(Session.t(), String.t()) :: String.t()
   def build_url(session, encrypted_params) do
@@ -73,6 +75,7 @@ defmodule ZcaEx.Api.Endpoints.ReuseAvatar do
 
   defp get_service_url(session, service) do
     service_key = to_string(service)
+
     case get_in(session.zpw_service_map, [service_key]) do
       [url | _] when is_binary(url) -> url
       url when is_binary(url) -> url

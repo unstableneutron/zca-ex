@@ -8,10 +8,8 @@ defmodule ZcaEx.HTTP.Request do
           body: binary() | nil
         }
 
-  defstruct [
-    method: :get,
-    url: "",
-    headers: [],
-    body: nil
-  ]
+  defstruct method: :get,
+            url: "",
+            headers: [],
+            body: nil
 end

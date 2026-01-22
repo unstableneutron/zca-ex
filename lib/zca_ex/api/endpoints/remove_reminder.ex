@@ -32,20 +32,20 @@ defmodule ZcaEx.Api.Endpoints.RemoveReminder do
       params = build_params(thread_id, reminder_id, credentials, opts)
 
       case encrypt_params(session.secret_key, params) do
-      {:ok, encrypted_params} ->
-        url = build_url(session, thread_type)
-        body = build_form_body(%{params: encrypted_params})
+        {:ok, encrypted_params} ->
+          url = build_url(session, thread_type)
+          body = build_form_body(%{params: encrypted_params})
 
-        case AccountClient.post(session.uid, url, body, credentials.user_agent) do
-          {:ok, response} ->
-            Response.parse(response, session.secret_key)
+          case AccountClient.post(session.uid, url, body, credentials.user_agent) do
+            {:ok, response} ->
+              Response.parse(response, session.secret_key)
 
-          {:error, reason} ->
-            {:error, %Error{message: "Request failed: #{inspect(reason)}", code: nil}}
-        end
+            {:error, reason} ->
+              {:error, %Error{message: "Request failed: #{inspect(reason)}", code: nil}}
+          end
 
-      {:error, _} = error ->
-        error
+        {:error, _} = error ->
+          error
       end
     end
   end
@@ -54,7 +54,9 @@ defmodule ZcaEx.Api.Endpoints.RemoveReminder do
   @spec validate_thread_type(term()) :: :ok | {:error, Error.t()}
   def validate_thread_type(:user), do: :ok
   def validate_thread_type(:group), do: :ok
-  def validate_thread_type(_), do: {:error, %Error{message: "thread_type must be :user or :group", code: nil}}
+
+  def validate_thread_type(_),
+    do: {:error, %Error{message: "thread_type must be :user or :group", code: nil}}
 
   @doc "Build URL for remove reminder endpoint"
   @spec build_url(Session.t(), thread_type()) :: String.t()

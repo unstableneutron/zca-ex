@@ -53,6 +53,7 @@ defmodule ZcaEx.WS.ConnectionReconnectTest do
       end)
 
       send(pid, {:disconnect_for_test})
+
       :sys.replace_state(pid, fn state ->
         send(pid, :trigger_disconnect)
         state
@@ -62,7 +63,11 @@ defmodule ZcaEx.WS.ConnectionReconnectTest do
       assert state.reconnect_enabled == true
     end
 
-    test "explicit_disconnect sets reconnect_enabled to false", %{account_id: account_id, pid: pid, session: session} do
+    test "explicit_disconnect sets reconnect_enabled to false", %{
+      account_id: account_id,
+      pid: pid,
+      session: session
+    } do
       :sys.replace_state(pid, fn state ->
         %{state | session: session, state: :ready, reconnect_enabled: true}
       end)
@@ -75,7 +80,11 @@ defmodule ZcaEx.WS.ConnectionReconnectTest do
       assert state.retry_policy == nil
     end
 
-    test "disconnect with reconnect_enabled=false does not schedule reconnect", %{account_id: account_id, pid: pid, session: session} do
+    test "disconnect with reconnect_enabled=false does not schedule reconnect", %{
+      account_id: account_id,
+      pid: pid,
+      session: session
+    } do
       :sys.replace_state(pid, fn state ->
         %{state | session: session, state: :ready, reconnect_enabled: false}
       end)
@@ -112,7 +121,11 @@ defmodule ZcaEx.WS.ConnectionReconnectTest do
       session = %Session{
         uid: "123",
         secret_key: "key",
-        ws_endpoints: ["wss://endpoint1.example.com", "wss://endpoint2.example.com", "wss://endpoint3.example.com"],
+        ws_endpoints: [
+          "wss://endpoint1.example.com",
+          "wss://endpoint2.example.com",
+          "wss://endpoint3.example.com"
+        ],
         api_version: 636,
         api_type: 30
       }

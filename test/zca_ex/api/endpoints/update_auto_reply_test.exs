@@ -44,7 +44,8 @@ defmodule ZcaEx.Api.Endpoints.UpdateAutoReplyTest do
     end
 
     test "builds correct params for scope 2 with uids", %{credentials: credentials} do
-      params = UpdateAutoReply.build_params(1, "Reply", true, 0, 100, 2, ["uid1", "uid2"], credentials)
+      params =
+        UpdateAutoReply.build_params(1, "Reply", true, 0, 100, 2, ["uid1", "uid2"], credentials)
 
       assert params.id == 1
       assert params.scope == 2
@@ -162,7 +163,9 @@ defmodule ZcaEx.Api.Endpoints.UpdateAutoReplyTest do
 
     test "returns error for missing service URL", %{session: session, credentials: credentials} do
       session_no_service = %{session | zpw_service_map: %{}}
-      result = UpdateAutoReply.update(1, "Hi", true, 0, 100, 0, nil, session_no_service, credentials)
+
+      result =
+        UpdateAutoReply.update(1, "Hi", true, 0, 100, 0, nil, session_no_service, credentials)
 
       assert {:error, error} = result
       assert error.message =~ "auto_reply service URL not found"

@@ -45,7 +45,10 @@ defmodule ZcaEx.Api.Endpoints.SendDeliveredEventTest do
   end
 
   describe "call/5 to user" do
-    test "sends delivered event for single message with is_seen=true", %{session: session, credentials: credentials} do
+    test "sends delivered event for single message with is_seen=true", %{
+      session: session,
+      credentials: credentials
+    } do
       response_data = %{"status" => 0}
       response = Fixtures.build_success_response(response_data, session.secret_key)
 
@@ -55,19 +58,23 @@ defmodule ZcaEx.Api.Endpoints.SendDeliveredEventTest do
         {:ok, %Response{status: response.status, body: response.body, headers: response.headers}}
       end)
 
-      message = build_message(%{
-        msg_id: "1000",
-        cli_msg_id: "2000",
-        uid_from: "sender123",
-        id_to: "receiver456"
-      })
+      message =
+        build_message(%{
+          msg_id: "1000",
+          cli_msg_id: "2000",
+          uid_from: "sender123",
+          id_to: "receiver456"
+        })
 
       result = SendDeliveredEvent.call(true, [message], :user, session, credentials)
 
       assert :ok = result
     end
 
-    test "sends delivered event for single message with is_seen=false", %{session: session, credentials: credentials} do
+    test "sends delivered event for single message with is_seen=false", %{
+      session: session,
+      credentials: credentials
+    } do
       response_data = %{"status" => 0}
       response = Fixtures.build_success_response(response_data, session.secret_key)
 
@@ -75,19 +82,23 @@ defmodule ZcaEx.Api.Endpoints.SendDeliveredEventTest do
         {:ok, %Response{status: response.status, body: response.body, headers: response.headers}}
       end)
 
-      message = build_message(%{
-        msg_id: "1000",
-        cli_msg_id: "2000",
-        uid_from: "sender123",
-        id_to: "receiver456"
-      })
+      message =
+        build_message(%{
+          msg_id: "1000",
+          cli_msg_id: "2000",
+          uid_from: "sender123",
+          id_to: "receiver456"
+        })
 
       result = SendDeliveredEvent.call(false, [message], :user, session, credentials)
 
       assert :ok = result
     end
 
-    test "sends delivered event for multiple messages", %{session: session, credentials: credentials} do
+    test "sends delivered event for multiple messages", %{
+      session: session,
+      credentials: credentials
+    } do
       response_data = %{"status" => 0}
       response = Fixtures.build_success_response(response_data, session.secret_key)
 
@@ -131,12 +142,13 @@ defmodule ZcaEx.Api.Endpoints.SendDeliveredEventTest do
         {:ok, %Response{status: response.status, body: response.body, headers: response.headers}}
       end)
 
-      message = build_message(%{
-        msg_id: "3000",
-        cli_msg_id: "4000",
-        uid_from: "sender789",
-        id_to: "group123"
-      })
+      message =
+        build_message(%{
+          msg_id: "3000",
+          cli_msg_id: "4000",
+          uid_from: "sender789",
+          id_to: "group123"
+        })
 
       result = SendDeliveredEvent.call(true, [message], :group, session, credentials)
 
@@ -145,7 +157,10 @@ defmodule ZcaEx.Api.Endpoints.SendDeliveredEventTest do
   end
 
   describe "thread validation" do
-    test "returns error when group messages belong to different groups", %{session: session, credentials: credentials} do
+    test "returns error when group messages belong to different groups", %{
+      session: session,
+      credentials: credentials
+    } do
       messages = [
         build_message(%{msg_id: "1", id_to: "group1"}),
         build_message(%{msg_id: "2", id_to: "group2"})

@@ -21,7 +21,8 @@ defmodule ZcaEx.Api.Endpoints.CreateGroup do
     - `{:error, Error.t()}` on failure
   """
   @spec call(Session.t(), Credentials.t(), keyword()) ::
-          {:ok, %{group_id: String.t(), success_members: [String.t()], error_members: [String.t()]}}
+          {:ok,
+           %{group_id: String.t(), success_members: [String.t()], error_members: [String.t()]}}
           | {:error, Error.t()}
   def call(session, credentials, opts \\ []) do
     members = Keyword.get(opts, :members, [])
@@ -56,7 +57,9 @@ defmodule ZcaEx.Api.Endpoints.CreateGroup do
 
   @doc "Validate members list"
   @spec validate_members([String.t()]) :: :ok | {:error, Error.t()}
-  def validate_members([]), do: {:error, %Error{message: "Group must have at least one member", code: nil}}
+  def validate_members([]),
+    do: {:error, %Error{message: "Group must have at least one member", code: nil}}
+
   def validate_members(members) when is_list(members), do: :ok
   def validate_members(_), do: {:error, %Error{message: "Members must be a list", code: nil}}
 

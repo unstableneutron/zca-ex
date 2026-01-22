@@ -61,8 +61,11 @@ defmodule ZcaEx.Api.Endpoints.GetProductCatalogList do
     end
   end
 
-  defp validate_catalog_id(catalog_id) when is_binary(catalog_id) and byte_size(catalog_id) > 0, do: :ok
-  defp validate_catalog_id(_), do: {:error, Error.new(:api, "catalog_id must be a non-empty string", code: :invalid_input)}
+  defp validate_catalog_id(catalog_id) when is_binary(catalog_id) and byte_size(catalog_id) > 0,
+    do: :ok
+
+  defp validate_catalog_id(_),
+    do: {:error, Error.new(:api, "catalog_id must be a non-empty string", code: :invalid_input)}
 
   defp validate_opts(opts) do
     with :ok <- validate_limit(Keyword.get(opts, :limit)),
@@ -75,20 +78,34 @@ defmodule ZcaEx.Api.Endpoints.GetProductCatalogList do
 
   defp validate_limit(nil), do: :ok
   defp validate_limit(limit) when is_integer(limit) and limit > 0, do: :ok
-  defp validate_limit(_), do: {:error, Error.new(:api, "limit must be a positive integer", code: :invalid_input)}
+
+  defp validate_limit(_),
+    do: {:error, Error.new(:api, "limit must be a positive integer", code: :invalid_input)}
 
   defp validate_page(nil), do: :ok
   defp validate_page(page) when is_integer(page) and page >= 0, do: :ok
-  defp validate_page(_), do: {:error, Error.new(:api, "page must be a non-negative integer", code: :invalid_input)}
+
+  defp validate_page(_),
+    do: {:error, Error.new(:api, "page must be a non-negative integer", code: :invalid_input)}
 
   defp validate_version_catalog(nil), do: :ok
   defp validate_version_catalog(v) when is_integer(v) and v >= 0, do: :ok
-  defp validate_version_catalog(_), do: {:error, Error.new(:api, "version_catalog must be a non-negative integer", code: :invalid_input)}
+
+  defp validate_version_catalog(_),
+    do:
+      {:error,
+       Error.new(:api, "version_catalog must be a non-negative integer", code: :invalid_input)}
 
   defp validate_last_product_id(nil), do: :ok
   defp validate_last_product_id(id) when is_integer(id), do: :ok
   defp validate_last_product_id(id) when is_binary(id) and byte_size(id) > 0, do: :ok
-  defp validate_last_product_id(_), do: {:error, Error.new(:api, "last_product_id must be an integer or non-empty string", code: :invalid_input)}
+
+  defp validate_last_product_id(_),
+    do:
+      {:error,
+       Error.new(:api, "last_product_id must be an integer or non-empty string",
+         code: :invalid_input
+       )}
 
   @doc false
   def build_params(catalog_id, opts) do

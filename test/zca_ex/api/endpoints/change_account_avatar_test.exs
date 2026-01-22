@@ -141,7 +141,10 @@ defmodule ZcaEx.Api.Endpoints.ChangeAccountAvatarTest do
       assert error.message =~ "required"
     end
 
-    test "returns error for invalid avatar_data type", %{session: session, credentials: credentials} do
+    test "returns error for invalid avatar_data type", %{
+      session: session,
+      credentials: credentials
+    } do
       {:error, error} = ChangeAccountAvatar.call(session, credentials, 123)
       assert error.message =~ "binary"
     end

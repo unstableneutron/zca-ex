@@ -135,7 +135,10 @@ defmodule ZcaEx.Api.Endpoints.UpdateProfileTest do
       assert error.message == "Name must be a non-empty string"
     end
 
-    test "returns validation error for missing name", %{session: session, credentials: credentials} do
+    test "returns validation error for missing name", %{
+      session: session,
+      credentials: credentials
+    } do
       profile = %{dob: "1990-01-15"}
 
       assert {:error, error} = UpdateProfile.call(session, credentials, profile)

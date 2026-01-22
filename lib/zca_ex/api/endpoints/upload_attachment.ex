@@ -110,7 +110,9 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachment do
       chunk_size: chunk_size,
       max_files: sharefile["max_file"] || @default_max_files,
       max_size_mb: sharefile["max_size_share_file_v3"] || @default_max_size_mb,
-      restricted_ext: (sharefile["restricted_ext_file"] || @default_restricted_ext) |> Enum.map(&String.downcase/1)
+      restricted_ext:
+        (sharefile["restricted_ext_file"] || @default_restricted_ext)
+        |> Enum.map(&String.downcase/1)
     }
   end
 
@@ -214,7 +216,10 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachment do
     end
   end
 
-  defp read_file_data(%AttachmentSource{type: :binary, data: data, filename: filename, metadata: metadata}, file_type) do
+  defp read_file_data(
+         %AttachmentSource{type: :binary, data: data, filename: filename, metadata: metadata},
+         file_type
+       ) do
     total_size = byte_size(data)
     file_data = build_file_data(filename, total_size, file_type, metadata)
     {:ok, file_data, data}
@@ -244,7 +249,8 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachment do
     max_bytes = settings.max_size_mb * 1024 * 1024
 
     if size > max_bytes do
-      {:error, Error.api(nil, "File #{filename} size exceeds maximum size of #{settings.max_size_mb}MB")}
+      {:error,
+       Error.api(nil, "File #{filename} size exceeds maximum size of #{settings.max_size_mb}MB")}
     else
       :ok
     end
@@ -296,7 +302,17 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachment do
     end
   end
 
-  defp upload_attachment(attachment, thread_id, thread_type, base_url, type_param, client_id, session, creds, settings) do
+  defp upload_attachment(
+         attachment,
+         thread_id,
+         thread_type,
+         base_url,
+         type_param,
+         client_id,
+         session,
+         creds,
+         settings
+       ) do
     %{file_type: file_type, file_data: file_data, data: data, filename: filename} = attachment
 
     url_path = Attachment.url_path_for_type(file_type)
@@ -306,15 +322,16 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachment do
     chunks = split_into_chunks(data, settings.chunk_size)
     total_chunks = length(chunks)
 
-    params = build_upload_params(
-      thread_id,
-      thread_type,
-      filename,
-      file_data.total_size,
-      total_chunks,
-      client_id,
-      creds.imei
-    )
+    params =
+      build_upload_params(
+        thread_id,
+        thread_type,
+        filename,
+        file_data.total_size,
+        total_chunks,
+        client_id,
+        creds.imei
+      )
 
     upload_chunks(
       chunks,
@@ -347,7 +364,15 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachment do
     end
   end
 
-  defp build_upload_params(thread_id, thread_type, filename, total_size, total_chunks, client_id, imei) do
+  defp build_upload_params(
+         thread_id,
+         thread_type,
+         filename,
+         total_size,
+         total_chunks,
+         client_id,
+         imei
+       ) do
     base = %{
       totalChunk: total_chunks,
       fileName: filename,
@@ -366,7 +391,17 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachment do
     end
   end
 
-  defp upload_chunks(chunks, params, full_url, type_param, file_type, file_data, full_data, session, creds) do
+  defp upload_chunks(
+         chunks,
+         params,
+         full_url,
+         type_param,
+         file_type,
+         file_data,
+         full_data,
+         session,
+         creds
+       ) do
     result =
       chunks
       |> Enum.with_index(1)
@@ -391,10 +426,16 @@ defmodule ZcaEx.Api.Endpoints.UploadAttachment do
   defp upload_single_chunk(chunk_data, params, full_url, type_param, session, creds) do
     case encrypt_params(session.secret_key, params) do
       {:ok, encrypted_params} ->
-        url = Url.build(full_url, %{type: type_param, params: encrypted_params}, nretry: 0, api_type: session.api_type, version: session.api_version)
+        url =
+          Url.build(full_url, %{type: type_param, params: encrypted_params},
+            nretry: 0,
+            api_type: session.api_type,
+            version: session.api_version
+          )
 
         parts = [
-          {"chunkContent", chunk_data, filename: params.fileName, content_type: "application/octet-stream"}
+          {"chunkContent", chunk_data,
+           filename: params.fileName, content_type: "application/octet-stream"}
         ]
 
         case AccountClient.post_multipart(session.uid, url, parts, creds.user_agent) do

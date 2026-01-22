@@ -110,7 +110,13 @@ defmodule ZcaEx.Api.Endpoints.GetCatalogListTest do
 
     test "accepts valid options", %{session: session, credentials: credentials} do
       session_no_service = %{session | zpw_service_map: %{}}
-      result = GetCatalogList.list(session_no_service, credentials, limit: 50, page: 2, last_product_id: 100)
+
+      result =
+        GetCatalogList.list(session_no_service, credentials,
+          limit: 50,
+          page: 2,
+          last_product_id: 100
+        )
 
       assert {:error, error} = result
       assert error.code == :service_not_found

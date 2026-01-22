@@ -22,7 +22,8 @@ defmodule ZcaEx.Api.Endpoints.EditNote do
   """
   @spec edit(String.t(), String.t(), String.t(), boolean(), Session.t(), Credentials.t()) ::
           {:ok, map()} | {:error, Error.t()}
-  def edit(group_id, topic_id, title, session, credentials), do: edit(group_id, topic_id, title, false, session, credentials)
+  def edit(group_id, topic_id, title, session, credentials),
+    do: edit(group_id, topic_id, title, false, session, credentials)
 
   def edit(group_id, _topic_id, _title, _pin?, _session, _credentials)
       when not is_binary(group_id) or group_id == "" do
@@ -39,7 +40,8 @@ defmodule ZcaEx.Api.Endpoints.EditNote do
     {:error, Error.new(:api, "title must be a non-empty string", code: :invalid_input)}
   end
 
-  def edit(_group_id, _topic_id, _title, pin?, _session, _credentials) when not is_boolean(pin?) do
+  def edit(_group_id, _topic_id, _title, pin?, _session, _credentials)
+      when not is_boolean(pin?) do
     {:error, Error.new(:api, "pin? must be a boolean", code: :invalid_input)}
   end
 
@@ -70,25 +72,29 @@ defmodule ZcaEx.Api.Endpoints.EditNote do
   end
 
   @doc "Build params for encryption"
-  @spec build_params(String.t(), String.t(), String.t(), boolean(), Credentials.t()) :: {:ok, map()} | {:error, Error.t()}
+  @spec build_params(String.t(), String.t(), String.t(), boolean(), Credentials.t()) ::
+          {:ok, map()} | {:error, Error.t()}
   def build_params(group_id, topic_id, title, pin?, credentials) do
     case Jason.encode(%{title: title}) do
       {:ok, params_json} ->
-        {:ok, %{
-          grid: group_id,
-          type: 0,
-          color: -16_777_216,
-          emoji: "",
-          startTime: -1,
-          duration: -1,
-          params: params_json,
-          topicId: topic_id,
-          repeat: 0,
-          imei: credentials.imei,
-          pinAct: if(pin?, do: 1, else: 2)
-        }}
+        {:ok,
+         %{
+           grid: group_id,
+           type: 0,
+           color: -16_777_216,
+           emoji: "",
+           startTime: -1,
+           duration: -1,
+           params: params_json,
+           topicId: topic_id,
+           repeat: 0,
+           imei: credentials.imei,
+           pinAct: if(pin?, do: 1, else: 2)
+         }}
+
       {:error, reason} ->
-        {:error, Error.new(:api, "Failed to encode params: #{inspect(reason)}", code: :invalid_input)}
+        {:error,
+         Error.new(:api, "Failed to encode params: #{inspect(reason)}", code: :invalid_input)}
     end
   end
 

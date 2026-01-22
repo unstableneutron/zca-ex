@@ -48,6 +48,7 @@ defmodule ZcaEx.Api.Endpoints.GetStickers do
   @spec validate_keyword(any()) :: :ok | {:error, Error.t()}
   def validate_keyword(keyword) when is_binary(keyword) do
     trimmed = String.trim(keyword)
+
     if byte_size(trimmed) > 0 do
       :ok
     else

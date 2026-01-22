@@ -114,7 +114,10 @@ defmodule ZcaEx.Api.Endpoints.RemoveUnreadMarkTest do
   end
 
   describe "remove/4 with valid params" do
-    test "removes unread mark for user successfully", %{session: session, credentials: credentials} do
+    test "removes unread mark for user successfully", %{
+      session: session,
+      credentials: credentials
+    } do
       response_data = %{"updateId" => 100, "status" => 1}
       response = Fixtures.build_success_response(response_data, session.secret_key)
 
@@ -129,7 +132,10 @@ defmodule ZcaEx.Api.Endpoints.RemoveUnreadMarkTest do
       assert {:ok, %{update_id: 100, status: 1}} = result
     end
 
-    test "removes unread mark for group successfully", %{session: session, credentials: credentials} do
+    test "removes unread mark for group successfully", %{
+      session: session,
+      credentials: credentials
+    } do
       response_data = %{"updateId" => 200, "status" => 1}
       response = Fixtures.build_success_response(response_data, session.secret_key)
 

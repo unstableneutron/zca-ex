@@ -100,7 +100,7 @@ defmodule ZcaEx.Api.Endpoints.FindUserTest do
         "cover" => "https://cover.url",
         "status" => "Hello world",
         "gender" => 1,
-        "dob" => 19900101,
+        "dob" => 19_900_101,
         "sdob" => "01/01",
         "globalId" => "global123",
         "bizPkg" => %{"type" => "business"}
@@ -115,7 +115,7 @@ defmodule ZcaEx.Api.Endpoints.FindUserTest do
       assert result.cover == "https://cover.url"
       assert result.status == "Hello world"
       assert result.gender == 1
-      assert result.dob == 19900101
+      assert result.dob == 19_900_101
       assert result.sdob == "01/01"
       assert result.global_id == "global123"
       assert result.biz_pkg == %{"type" => "business"}
@@ -148,7 +148,7 @@ defmodule ZcaEx.Api.Endpoints.FindUserTest do
         cover: "https://cover.url",
         status: "Hello world",
         gender: 1,
-        dob: 19900101,
+        dob: 19_900_101,
         sdob: "01/01",
         globalId: "global123",
         bizPkg: %{type: "business"}

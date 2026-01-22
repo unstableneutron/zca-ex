@@ -49,8 +49,11 @@ defmodule ZcaEx.Api.Endpoints.GetBizAccount do
     end
   end
 
-  defp validate_friend_id(friend_id) when is_binary(friend_id) and byte_size(friend_id) > 0, do: :ok
-  defp validate_friend_id(_), do: {:error, Error.new(:api, "friend_id must be a non-empty string", code: :invalid_input)}
+  defp validate_friend_id(friend_id) when is_binary(friend_id) and byte_size(friend_id) > 0,
+    do: :ok
+
+  defp validate_friend_id(_),
+    do: {:error, Error.new(:api, "friend_id must be a non-empty string", code: :invalid_input)}
 
   @doc false
   def build_params(friend_id) do

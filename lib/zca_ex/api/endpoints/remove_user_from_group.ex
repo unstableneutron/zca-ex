@@ -21,7 +21,8 @@ defmodule ZcaEx.Api.Endpoints.RemoveUserFromGroup do
   """
   @spec call(String.t(), String.t() | [String.t()], Session.t(), Credentials.t()) ::
           {:ok, map()} | {:error, Error.t()}
-  def call(_group_id, member_id, _session, _credentials) when member_id == [] or member_id == "" do
+  def call(_group_id, member_id, _session, _credentials)
+      when member_id == [] or member_id == "" do
     {:error, %Error{message: "member_id cannot be empty", code: :invalid_input}}
   end
 

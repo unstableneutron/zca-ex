@@ -112,7 +112,11 @@ defmodule ZcaEx.Api.Endpoints.SendCardTest do
     end
 
     test "includes phone when provided" do
-      options = %{user_id: "contact123", qr_code_url: "https://qr.zalo.me/abc123", phone_number: "+1234567890"}
+      options = %{
+        user_id: "contact123",
+        qr_code_url: "https://qr.zalo.me/abc123",
+        phone_number: "+1234567890"
+      }
 
       msg_info = SendCard.build_msg_info(options)
 
@@ -129,7 +133,9 @@ defmodule ZcaEx.Api.Endpoints.SendCardTest do
     end
 
     test "returns error for empty user_id", %{session: session, credentials: creds} do
-      assert {:error, error} = SendCard.call(%{user_id: ""}, "recipient123", :user, session, creds)
+      assert {:error, error} =
+               SendCard.call(%{user_id: ""}, "recipient123", :user, session, creds)
+
       assert error.message =~ "user_id"
     end
 

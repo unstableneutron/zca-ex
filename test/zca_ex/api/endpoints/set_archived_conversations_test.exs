@@ -168,7 +168,10 @@ defmodule ZcaEx.Api.Endpoints.SetArchivedConversationsTest do
   end
 
   describe "call/4 validation" do
-    test "returns error when conversations is empty", %{session: session, credentials: credentials} do
+    test "returns error when conversations is empty", %{
+      session: session,
+      credentials: credentials
+    } do
       assert {:error, %ZcaEx.Error{message: "conversations cannot be empty"}} =
                SetArchivedConversations.call(session, credentials, true, [])
     end
@@ -177,7 +180,10 @@ defmodule ZcaEx.Api.Endpoints.SetArchivedConversationsTest do
       session_no_service = %{session | zpw_service_map: %{}}
 
       assert_raise RuntimeError, ~r/Service URL not found/, fn ->
-        SetArchivedConversations.call(session_no_service, credentials, true, %{id: "123", type: :user})
+        SetArchivedConversations.call(session_no_service, credentials, true, %{
+          id: "123",
+          type: :user
+        })
       end
     end
   end

@@ -50,7 +50,8 @@ defmodule ZcaEx.Api.Endpoints.CreateAutoReplyTest do
     end
 
     test "builds correct params for scope 2 with uids as list", %{credentials: credentials} do
-      params = CreateAutoReply.build_params("Reply", true, 0, 100, 2, ["uid1", "uid2"], credentials)
+      params =
+        CreateAutoReply.build_params("Reply", true, 0, 100, 2, ["uid1", "uid2"], credentials)
 
       assert params.scope == 2
       assert params.uids == ["uid1", "uid2"]

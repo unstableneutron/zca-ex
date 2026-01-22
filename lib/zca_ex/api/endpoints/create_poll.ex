@@ -64,19 +64,26 @@ defmodule ZcaEx.Api.Endpoints.CreatePoll do
   def validate_group_id(group_id) when is_binary(group_id) and byte_size(group_id) > 0, do: :ok
   def validate_group_id(""), do: {:error, %Error{message: "group_id is required", code: nil}}
   def validate_group_id(nil), do: {:error, %Error{message: "group_id is required", code: nil}}
-  def validate_group_id(_), do: {:error, %Error{message: "group_id must be a non-empty string", code: nil}}
+
+  def validate_group_id(_),
+    do: {:error, %Error{message: "group_id must be a non-empty string", code: nil}}
 
   @doc "Validate question"
   @spec validate_question(term()) :: :ok | {:error, Error.t()}
   def validate_question(question) when is_binary(question) and byte_size(question) > 0, do: :ok
   def validate_question(""), do: {:error, %Error{message: "question is required", code: nil}}
   def validate_question(nil), do: {:error, %Error{message: "question is required", code: nil}}
-  def validate_question(_), do: {:error, %Error{message: "question must be a non-empty string", code: nil}}
+
+  def validate_question(_),
+    do: {:error, %Error{message: "question must be a non-empty string", code: nil}}
 
   @doc "Validate poll options"
   @spec validate_options(term()) :: :ok | {:error, Error.t()}
   def validate_options(options) when is_list(options) and length(options) >= 2, do: :ok
-  def validate_options(options) when is_list(options), do: {:error, %Error{message: "Poll must have at least 2 options", code: nil}}
+
+  def validate_options(options) when is_list(options),
+    do: {:error, %Error{message: "Poll must have at least 2 options", code: nil}}
+
   def validate_options(_), do: {:error, %Error{message: "options must be a list", code: nil}}
 
   @doc "Build URL for create poll endpoint"

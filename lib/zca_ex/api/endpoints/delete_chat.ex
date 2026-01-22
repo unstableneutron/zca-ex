@@ -64,7 +64,11 @@ defmodule ZcaEx.Api.Endpoints.DeleteChat do
     {:error, %ZcaEx.Error{message: "Invalid thread_id: must be a non-empty string", code: nil}}
   end
 
-  defp validate_last_message(%{owner_id: owner_id, cli_msg_id: cli_msg_id, global_msg_id: global_msg_id})
+  defp validate_last_message(%{
+         owner_id: owner_id,
+         cli_msg_id: cli_msg_id,
+         global_msg_id: global_msg_id
+       })
        when is_binary(owner_id) and is_binary(cli_msg_id) and is_binary(global_msg_id) do
     :ok
   end
@@ -72,7 +76,8 @@ defmodule ZcaEx.Api.Endpoints.DeleteChat do
   defp validate_last_message(_) do
     {:error,
      %ZcaEx.Error{
-       message: "Invalid last_message: must have owner_id, cli_msg_id, and global_msg_id as strings",
+       message:
+         "Invalid last_message: must have owner_id, cli_msg_id, and global_msg_id as strings",
        code: nil
      }}
   end

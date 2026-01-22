@@ -55,12 +55,13 @@ defmodule ZcaEx.Api.Endpoints.SendSeenEventTest do
         {:ok, %Response{status: response.status, body: response.body, headers: response.headers}}
       end)
 
-      message = build_message(%{
-        msg_id: "1000",
-        cli_msg_id: "2000",
-        uid_from: "sender123",
-        id_to: "receiver456"
-      })
+      message =
+        build_message(%{
+          msg_id: "1000",
+          cli_msg_id: "2000",
+          uid_from: "sender123",
+          id_to: "receiver456"
+        })
 
       result = SendSeenEvent.call([message], :user, session, credentials)
 
@@ -111,12 +112,13 @@ defmodule ZcaEx.Api.Endpoints.SendSeenEventTest do
         {:ok, %Response{status: response.status, body: response.body, headers: response.headers}}
       end)
 
-      message = build_message(%{
-        msg_id: "3000",
-        cli_msg_id: "4000",
-        uid_from: "sender789",
-        id_to: "group123"
-      })
+      message =
+        build_message(%{
+          msg_id: "3000",
+          cli_msg_id: "4000",
+          uid_from: "sender789",
+          id_to: "group123"
+        })
 
       result = SendSeenEvent.call([message], :group, session, credentials)
 
@@ -125,7 +127,10 @@ defmodule ZcaEx.Api.Endpoints.SendSeenEventTest do
   end
 
   describe "thread validation" do
-    test "returns error when messages belong to different threads (user)", %{session: session, credentials: credentials} do
+    test "returns error when messages belong to different threads (user)", %{
+      session: session,
+      credentials: credentials
+    } do
       messages = [
         build_message(%{msg_id: "1", uid_from: "sender1"}),
         build_message(%{msg_id: "2", uid_from: "sender2"})
@@ -137,7 +142,10 @@ defmodule ZcaEx.Api.Endpoints.SendSeenEventTest do
       assert error.message =~ "same thread"
     end
 
-    test "returns error when messages belong to different threads (group)", %{session: session, credentials: credentials} do
+    test "returns error when messages belong to different threads (group)", %{
+      session: session,
+      credentials: credentials
+    } do
       messages = [
         build_message(%{msg_id: "1", id_to: "group1"}),
         build_message(%{msg_id: "2", id_to: "group2"})

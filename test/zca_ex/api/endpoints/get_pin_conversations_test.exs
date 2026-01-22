@@ -100,7 +100,10 @@ defmodule ZcaEx.Api.Endpoints.GetPinConversationsTest do
     end
 
     test "raises when conversation service missing", %{session: session, credentials: credentials} do
-      session_wrong_service = %{session | zpw_service_map: %{"profile" => ["https://profile.zalo.me"]}}
+      session_wrong_service = %{
+        session
+        | zpw_service_map: %{"profile" => ["https://profile.zalo.me"]}
+      }
 
       assert_raise RuntimeError, ~r/Service URL not found for conversation/, fn ->
         GetPinConversations.call(session_wrong_service, credentials)

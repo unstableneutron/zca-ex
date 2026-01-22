@@ -46,8 +46,11 @@ defmodule ZcaEx.Api.Factory do
           {:ok, String.t()} | {:error, ZcaEx.Error.t()}
   def encrypt_params(secret_key, params) when is_map(params) do
     case Jason.encode(params) do
-      {:ok, json} -> encrypt_params(secret_key, json)
-      {:error, reason} -> {:error, %ZcaEx.Error{message: "Failed to encode params: #{inspect(reason)}", code: nil}}
+      {:ok, json} ->
+        encrypt_params(secret_key, json)
+
+      {:error, reason} ->
+        {:error, %ZcaEx.Error{message: "Failed to encode params: #{inspect(reason)}", code: nil}}
     end
   end
 
@@ -74,8 +77,11 @@ defmodule ZcaEx.Api.Factory do
 
   def encrypt_params_utf8(key, params, output_format, uppercase?) when is_map(params) do
     case Jason.encode(params) do
-      {:ok, json} -> encrypt_params_utf8(key, json, output_format, uppercase?)
-      {:error, reason} -> {:error, %ZcaEx.Error{message: "Failed to encode params: #{inspect(reason)}", code: nil}}
+      {:ok, json} ->
+        encrypt_params_utf8(key, json, output_format, uppercase?)
+
+      {:error, reason} ->
+        {:error, %ZcaEx.Error{message: "Failed to encode params: #{inspect(reason)}", code: nil}}
     end
   end
 
@@ -93,7 +99,9 @@ defmodule ZcaEx.Api.Factory do
   def build_form_body(params) when is_map(params) do
     params
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
-    |> Enum.map(fn {k, v} -> "#{URI.encode_www_form(to_string(k))}=#{URI.encode_www_form(to_string(v))}" end)
+    |> Enum.map(fn {k, v} ->
+      "#{URI.encode_www_form(to_string(k))}=#{URI.encode_www_form(to_string(v))}"
+    end)
     |> Enum.join("&")
   end
 end

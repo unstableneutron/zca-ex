@@ -133,7 +133,9 @@ defmodule ZcaEx.Api.Endpoints.KeepAliveTest do
       session = %Session{
         uid: "123456",
         secret_key: @secret_key,
-        zpw_service_map: %{"chat" => ["https://primary.chat.zalo.me", "https://backup.chat.zalo.me"]},
+        zpw_service_map: %{
+          "chat" => ["https://primary.chat.zalo.me", "https://backup.chat.zalo.me"]
+        },
         api_type: 30,
         api_version: 645
       }
@@ -161,7 +163,7 @@ defmodule ZcaEx.Api.Endpoints.KeepAliveTest do
       # This test verifies the module is set up correctly
       # The actual parse_unencrypted behavior is tested in Response module tests
       # Here we just verify the endpoint doesn't expect encrypted response
-      
+
       # build_base_url works (proves the module compiles and basic setup is correct)
       session = %Session{
         uid: "123456",

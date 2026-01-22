@@ -78,10 +78,16 @@ defmodule ZcaEx.Api.Endpoints.FindUser do
 
   @doc "Validate phone number is non-empty"
   @spec validate_phone_number(term()) :: :ok | {:error, Error.t()}
-  def validate_phone_number(nil), do: {:error, %Error{message: "Phone number is required", code: nil}}
-  def validate_phone_number(""), do: {:error, %Error{message: "Phone number cannot be empty", code: nil}}
+  def validate_phone_number(nil),
+    do: {:error, %Error{message: "Phone number is required", code: nil}}
+
+  def validate_phone_number(""),
+    do: {:error, %Error{message: "Phone number cannot be empty", code: nil}}
+
   def validate_phone_number(phone) when is_binary(phone), do: :ok
-  def validate_phone_number(_), do: {:error, %Error{message: "Phone number must be a string", code: nil}}
+
+  def validate_phone_number(_),
+    do: {:error, %Error{message: "Phone number must be a string", code: nil}}
 
   @doc "Normalize phone number for Vietnamese locale"
   @spec normalize_phone(String.t(), String.t()) :: String.t()

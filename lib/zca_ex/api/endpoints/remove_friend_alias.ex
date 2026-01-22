@@ -49,7 +49,9 @@ defmodule ZcaEx.Api.Endpoints.RemoveFriendAlias do
   def validate_friend_id(nil), do: {:error, %Error{message: "friend_id is required", code: nil}}
   def validate_friend_id(""), do: {:error, %Error{message: "friend_id is required", code: nil}}
   def validate_friend_id(id) when is_binary(id), do: :ok
-  def validate_friend_id(_), do: {:error, %Error{message: "friend_id must be a string", code: nil}}
+
+  def validate_friend_id(_),
+    do: {:error, %Error{message: "friend_id must be a string", code: nil}}
 
   @doc "Build params for encryption"
   @spec build_params(String.t()) :: map()

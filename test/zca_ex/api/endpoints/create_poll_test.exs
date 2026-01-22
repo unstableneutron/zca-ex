@@ -115,7 +115,7 @@ defmodule ZcaEx.Api.Endpoints.CreatePollTest do
 
     test "builds params with all options enabled" do
       opts = [
-        expired_time: 3600000,
+        expired_time: 3_600_000,
         allow_multi_choices: true,
         allow_add_new_option: true,
         hide_vote_preview: true,
@@ -124,7 +124,7 @@ defmodule ZcaEx.Api.Endpoints.CreatePollTest do
 
       params = CreatePoll.build_params("group123", "Q?", ["A", "B"], "imei", opts)
 
-      assert params.expired_time == 3600000
+      assert params.expired_time == 3_600_000
       assert params.allow_multi_choices == true
       assert params.allow_add_new_option == true
       assert params.is_hide_vote_preview == true
@@ -221,12 +221,18 @@ defmodule ZcaEx.Api.Endpoints.CreatePollTest do
                CreatePoll.call(session, credentials, "group123", options: ["A", "B"])
     end
 
-    test "returns error when options has less than 2 items", %{session: session, credentials: credentials} do
+    test "returns error when options has less than 2 items", %{
+      session: session,
+      credentials: credentials
+    } do
       assert {:error, %ZcaEx.Error{message: "Poll must have at least 2 options"}} =
                CreatePoll.call(session, credentials, "group123", question: "Q?", options: ["A"])
     end
 
-    test "returns error when options is not provided", %{session: session, credentials: credentials} do
+    test "returns error when options is not provided", %{
+      session: session,
+      credentials: credentials
+    } do
       assert {:error, %ZcaEx.Error{message: "Poll must have at least 2 options"}} =
                CreatePoll.call(session, credentials, "group123", question: "Q?")
     end
