@@ -31,7 +31,8 @@ defmodule ZcaEx do
     
   Returns {:ok, pid} where pid is the Account.Supervisor pid.
   """
-  @spec ensure_account_started(term(), Credentials.t(), keyword()) :: {:ok, pid()} | {:error, term()}
+  @spec ensure_account_started(term(), Credentials.t(), keyword()) ::
+          {:ok, pid()} | {:error, term()}
   def ensure_account_started(account_id, %Credentials{} = credentials, opts \\ []) do
     session = Keyword.get(opts, :session)
 
@@ -83,6 +84,19 @@ defmodule ZcaEx do
   @spec get_session(String.t()) :: ZcaEx.Account.Session.t() | nil
   def get_session(account_id) do
     Manager.get_session(account_id)
+  end
+
+  @doc """
+  Get the UID of the logged-in user for the given account.
+
+  Returns `{:ok, uid}` or `{:error, :not_logged_in}`.
+  """
+  @spec get_own_id(String.t()) :: {:ok, String.t()} | {:error, :not_logged_in}
+  def get_own_id(account_id) do
+    case Manager.get_session(account_id) do
+      %{uid: uid} when is_binary(uid) -> {:ok, uid}
+      _ -> {:error, :not_logged_in}
+    end
   end
 
   @doc "List all registered account IDs"

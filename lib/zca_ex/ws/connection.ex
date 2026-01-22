@@ -96,14 +96,14 @@ defmodule ZcaEx.WS.Connection do
 
   @doc "Request old messages for a thread type"
   @spec request_old_messages(String.t(), :user | :group, String.t() | integer() | nil) ::
-          :ok | {:error, term()}
+          {:ok, String.t()} | {:error, term()}
   def request_old_messages(account_id, thread_type, last_id \\ nil) do
     GenServer.call(via(account_id), {:request_old_messages, thread_type, last_id})
   end
 
   @doc "Request old reactions for a thread type"
   @spec request_old_reactions(String.t(), :user | :group, String.t() | integer() | nil) ::
-          :ok | {:error, term()}
+          {:ok, String.t()} | {:error, term()}
   def request_old_reactions(account_id, thread_type, last_id \\ nil) do
     GenServer.call(via(account_id), {:request_old_reactions, thread_type, last_id})
   end
@@ -202,7 +202,7 @@ defmodule ZcaEx.WS.Connection do
     case do_send_frame(state, frame) do
       {:ok, new_state} ->
         Telemetry.ws_message_sent(state.account_id, byte_size(frame))
-        {:reply, :ok, %{new_state | request_id: state.request_id + 1}}
+        {:reply, {:ok, req_id}, %{new_state | request_id: state.request_id + 1}}
 
       {:error, reason, new_state} ->
         {:reply, {:error, reason}, new_state}
@@ -220,7 +220,7 @@ defmodule ZcaEx.WS.Connection do
     case do_send_frame(state, frame) do
       {:ok, new_state} ->
         Telemetry.ws_message_sent(state.account_id, byte_size(frame))
-        {:reply, :ok, %{new_state | request_id: state.request_id + 1}}
+        {:reply, {:ok, req_id}, %{new_state | request_id: state.request_id + 1}}
 
       {:error, reason, new_state} ->
         {:reply, {:error, reason}, new_state}
@@ -700,7 +700,9 @@ defmodule ZcaEx.WS.Connection do
           end)
 
         true ->
-          Logger.warning("Dropping :message event: unexpected data shape keys=#{inspect(Map.keys(inner_data))}")
+          Logger.warning(
+            "Dropping :message event: unexpected data shape keys=#{inspect(Map.keys(inner_data))}"
+          )
       end
     else
       Logger.warning("Dropping :message event: data not a map after decryption")
@@ -748,6 +750,7 @@ defmodule ZcaEx.WS.Connection do
 
     if is_map(data) do
       uid = state.session.uid
+      req_id = Map.get(data, "req_id")
 
       raw_reacts =
         case thread_type do
@@ -758,7 +761,10 @@ defmodule ZcaEx.WS.Connection do
       if is_list(raw_reacts) do
         models = Enum.map(raw_reacts, &Reaction.from_ws_data(&1, uid, thread_type))
 
-        Dispatcher.dispatch(state.account_id, :old_reactions, thread_type, models)
+        Dispatcher.dispatch(state.account_id, :old_reactions, thread_type, %{
+          req_id: req_id,
+          reactions: models
+        })
 
         Enum.each(models, fn model ->
           Dispatcher.dispatch(state.account_id, :reaction, thread_type, model)
@@ -785,6 +791,7 @@ defmodule ZcaEx.WS.Connection do
 
     if is_map(data) do
       uid = state.session.uid
+      req_id = Map.get(data, "req_id")
 
       raw_msgs =
         case thread_type do
@@ -795,7 +802,10 @@ defmodule ZcaEx.WS.Connection do
       if is_list(raw_msgs) do
         models = Enum.map(raw_msgs, &Message.from_ws_data(&1, uid, thread_type))
 
-        Dispatcher.dispatch(state.account_id, :old_messages, thread_type, models)
+        Dispatcher.dispatch(state.account_id, :old_messages, thread_type, %{
+          req_id: req_id,
+          messages: models
+        })
 
         Enum.each(models, fn model ->
           Dispatcher.dispatch(state.account_id, :message, thread_type, model)

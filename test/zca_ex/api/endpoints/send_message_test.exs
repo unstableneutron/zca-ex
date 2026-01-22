@@ -92,11 +92,13 @@ defmodule ZcaEx.Api.Endpoints.SendMessageTest do
     end
   end
 
-  describe "build_params/5" do
+  describe "build_params/6" do
+    @client_id 123_456_789
+
     test "builds text params for user message", %{credentials: creds} do
       content = %{msg: "Hello"}
 
-      params = SendMessage.build_params(content, "user123", :user, [], creds)
+      params = SendMessage.build_params(content, "user123", :user, [], creds, @client_id)
 
       assert params.message == "Hello"
       assert params.toid == "user123"
@@ -109,7 +111,7 @@ defmodule ZcaEx.Api.Endpoints.SendMessageTest do
     test "builds text params for group message", %{credentials: creds} do
       content = %{msg: "Hello group"}
 
-      params = SendMessage.build_params(content, "group123", :group, [], creds)
+      params = SendMessage.build_params(content, "group123", :group, [], creds, @client_id)
 
       assert params.message == "Hello group"
       assert params.grid == "group123"
@@ -122,7 +124,7 @@ defmodule ZcaEx.Api.Endpoints.SendMessageTest do
       content = %{msg: "Hello @user"}
       mentions = [%{pos: 6, uid: "456", len: 5, type: 0}]
 
-      params = SendMessage.build_params(content, "group123", :group, mentions, creds)
+      params = SendMessage.build_params(content, "group123", :group, mentions, creds, @client_id)
 
       assert params.mentionInfo
       decoded = Jason.decode!(params.mentionInfo)
@@ -142,7 +144,7 @@ defmodule ZcaEx.Api.Endpoints.SendMessageTest do
 
       content = %{msg: "Reply", quote: quote_data}
 
-      params = SendMessage.build_params(content, "user123", :user, [], creds)
+      params = SendMessage.build_params(content, "user123", :user, [], creds, @client_id)
 
       assert params.message == "Reply"
       assert params.qmsgOwner == "sender123"
@@ -158,7 +160,7 @@ defmodule ZcaEx.Api.Endpoints.SendMessageTest do
       bold_style = TextStyle.new(0, 5, :bold)
       content = %{msg: "Hello", styles: [bold_style]}
 
-      params = SendMessage.build_params(content, "user123", :user, [], creds)
+      params = SendMessage.build_params(content, "user123", :user, [], creds, @client_id)
 
       assert params.textProperties
       text_props = Jason.decode!(params.textProperties)
@@ -173,7 +175,7 @@ defmodule ZcaEx.Api.Endpoints.SendMessageTest do
     test "includes metaData when urgency is important", %{credentials: creds} do
       content = %{msg: "Urgent!", urgency: :important}
 
-      params = SendMessage.build_params(content, "user123", :user, [], creds)
+      params = SendMessage.build_params(content, "user123", :user, [], creds, @client_id)
 
       assert params.metaData == %{urgency: 1}
     end
@@ -181,7 +183,7 @@ defmodule ZcaEx.Api.Endpoints.SendMessageTest do
     test "includes metaData when urgency is urgent", %{credentials: creds} do
       content = %{msg: "Very urgent!", urgency: :urgent}
 
-      params = SendMessage.build_params(content, "user123", :user, [], creds)
+      params = SendMessage.build_params(content, "user123", :user, [], creds, @client_id)
 
       assert params.metaData == %{urgency: 2}
     end
@@ -189,7 +191,7 @@ defmodule ZcaEx.Api.Endpoints.SendMessageTest do
     test "does not include metaData when urgency is default", %{credentials: creds} do
       content = %{msg: "Normal", urgency: :default}
 
-      params = SendMessage.build_params(content, "user123", :user, [], creds)
+      params = SendMessage.build_params(content, "user123", :user, [], creds, @client_id)
 
       refute Map.has_key?(params, :metaData)
     end
@@ -197,7 +199,7 @@ defmodule ZcaEx.Api.Endpoints.SendMessageTest do
     test "includes custom ttl when provided", %{credentials: creds} do
       content = %{msg: "Expiring", ttl: 60000}
 
-      params = SendMessage.build_params(content, "user123", :user, [], creds)
+      params = SendMessage.build_params(content, "user123", :user, [], creds, @client_id)
 
       assert params.ttl == 60000
     end
